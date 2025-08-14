@@ -14,7 +14,7 @@ const contents = [
     description: "lorem ipsum dolor sit amet, consectetur adipiscing elit.",
   },
   {
-    title: "Fulano",
+    title: "XRP",
     description:
       "lorem ipsum dolor sit amet, da, necessitatibus ratione itaque quidems omnis?.",
   },
