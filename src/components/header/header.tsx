@@ -67,6 +67,7 @@ export function Header() {
           )}
         </div>
       </div>
+      <hr className="w-full border-gray-800 mt-4" />
     </header>
   );
 }
