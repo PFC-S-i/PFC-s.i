@@ -58,6 +58,5 @@ export {
 } from "./tooltip";
 export { Separator } from "./separator";
 export { Sheet } from "./sheet";
-export { Sidebar, SidebarProvider } from "./sidebar";
 export { Card, CardContent } from "./card";
 export { RadioGroup, RadioGroupItem } from "./radio-group";

@@ -35,8 +35,6 @@ export {
   TooltipProvider,
   TooltipTrigger,
   Sheet,
-  Sidebar,
-  SidebarProvider,
   ShadcnTable,
   TableHead,
   TableRow,
