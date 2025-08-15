@@ -35,7 +35,7 @@ export function Header() {
           <NavLinks />
           <Button variant="outline" className="flex items-center gap-2">
             <User size={20} />
-            Login
+            Entrar / Cadastrar
           </Button>
         </div>
 
@@ -47,7 +47,7 @@ export function Header() {
 
           {/* Menu dropdown */}
           {isOpen && (
-            <div className="absolute right-0 mt-2 w-44 text-foreground bg-background shadow-md rounded-md z-50 p-2 space-y-2">
+            <div className="absolute right-0 mt-2 min-w-max text-foreground bg-background shadow-md rounded-md z-50 p-2 space-y-2">
               <a href="#sobre" className="block px-2 py-1">
                 Dashboard
               </a>
@@ -62,7 +62,7 @@ export function Header() {
                 href="#login"
                 className="block px-2 py-1 flex items-center gap-2"
               >
-                <User size={18} /> Login
+                <User size={18} className="text-primary" /> Entrar / Cadastrar
               </a>
             </div>
           )}
