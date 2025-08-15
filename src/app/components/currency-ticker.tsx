@@ -32,7 +32,7 @@ export function CurrencyTicker() {
   }
 
   return (
-    <div className="bg-primary rounded-lg mx-5 text-white text-sm py-1 overflow-hidden relative">
+    <div className=" text-foreground text-sm py-1 overflow-hidden relative">
       <div className="animate-marquee whitespace-nowrap">
         💵 Dólar: R$ {cotacao.usd} | 💶 Euro: R$ {cotacao.eur}
         {lastUpdate && ` — Última atualização ${lastUpdate}`}

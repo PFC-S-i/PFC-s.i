@@ -24,7 +24,7 @@ export function ContentSection() {
   return (
     <section
       id="conteudo"
-      className="bg-gray-100 rounded-2xl mx-4 sm:mx-5 py-20 px-4 sm:px-6 md:px-10"
+      className=" rounded-2xl sm:mx-5 py-20 px-4 sm:px-6 md:px-10"
     >
       <div className="max-w-full mx-auto sm:px-6 md:px-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {contents.map((item) => (

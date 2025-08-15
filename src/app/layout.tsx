@@ -2,7 +2,7 @@ import { CurrencyTicker, Header } from "./components";
 import "./globals.css";
 
 export const metadata = {
-  title: "PFC S.i",
+  title: "infoCripto",
   description: "Site com notícias, cultura e newsletter",
   icons: {
     icon: "/favicon.ico",
@@ -16,7 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className="bg-gray-50 font-sans text-gray-800">
+      <body className="px-4 md:px-10 lg:px-20 xl:px-32 max-w-[1920px] mx-auto bg-background text-foreground">
         <Header />
         <CurrencyTicker />
         {children}

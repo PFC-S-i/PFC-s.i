@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/button";
 import { useState } from "react";
 
 export function NewsletterSection() {
@@ -33,7 +34,7 @@ export function NewsletterSection() {
 
   return (
     <section id="newsletter" className="py-20">
-      <div className="max-w-4xl mx-auto text-center px-6">
+      <div className="max-w-4xl mx-auto text-center">
         <h2 className="text-2xl font-bold mb-4">
           Fique por dentro das novidades!
         </h2>
@@ -58,12 +59,9 @@ export function NewsletterSection() {
               onChange={(e) => setEmail(e.target.value)}
               className="px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:primary flex-1"
             />
-            <button
-              type="submit"
-              className="bg-primary text-white py-3 px-6 rounded-md font-semibold hover:bg-primary/85 transition"
-            >
+            <Button variant="outline" type="submit">
               Inscrever
-            </button>
+            </Button>
           </form>
         )}
 

@@ -2,6 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Menu, X } from "lucide-react";
+import { Button } from "@/components/button";
+import Link from "next/link";
+import { NavLinks } from "../../app/components/nav-link";
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,27 +23,15 @@ export function Header() {
 
   return (
     <header className="pt-5 relative">
-      <div className="mx-4 sm:px-6 flex justify-between items-center">
+      <div className="sm:px-6 flex justify-between items-center">
         {/* Logo */}
         <div className="flex items-center">
-          {/* Texto no desktop */}
-          <h1 className=" text-xl sm:text-2xl md:text-3xl font-bold text-primary">
-            PFC S.i
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">
+            infoCripto S.i
           </h1>
         </div>
 
-        {/* Links desktop */}
-        <nav className="hidden md:flex space-x-6">
-          <a href="#sobre" className="hover:text-primary">
-            Sobre
-          </a>
-          <a href="#conteudo" className="hover:text-primary">
-            Conteúdo
-          </a>
-          <a href="#newsletter" className="hover:text-primary">
-            Newsletter
-          </a>
-        </nav>
+        <NavLinks />
 
         {/* Hamburger mobile */}
         <div className="md:hidden relative" ref={menuRef}>
@@ -50,28 +41,28 @@ export function Header() {
 
           {/* Menu dropdown */}
           {isOpen && (
-            <div className="absolute right-0 mt-2 w-40 bg-white shadow-md rounded-md z-50">
-              <a
-                href="#sobre"
-                className="block px-4 py-2 hover:bg-gray-100"
+            <div className="absolute right-0 mt-2 w-44 text-foreground bg-background shadow-md rounded-md z-50 p-2 space-y-2">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
                 onClick={() => setIsOpen(false)}
               >
-                Sobre
-              </a>
-              <a
-                href="#conteudo"
-                className="block px-4 py-2 hover:bg-gray-100"
+                <a href="#sobre">Dashboard</a>
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
                 onClick={() => setIsOpen(false)}
               >
-                Conteúdo
-              </a>
-              <a
-                href="#newsletter"
-                className="block px-4 py-2 hover:bg-gray-100"
+                <a href="#conteudo">Educacional</a>
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
                 onClick={() => setIsOpen(false)}
               >
-                Newsletter
-              </a>
+                <a href="#newsletter">Newsletter</a>
+              </Button>
             </div>
           )}
         </div>

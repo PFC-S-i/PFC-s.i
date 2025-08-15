@@ -2,9 +2,9 @@
 @import url("https://fonts.googleapis.com/css2?family=Limelight&display=swap");
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --primary: #244001;
+  --background: #101016;
+  --foreground: #ffffff;
+  --primary: #55dbaa;
 }
 
 @theme inline {
@@ -37,5 +37,5 @@ body {
 .animate-marquee {
   display: inline-block;
   min-width: 100%;
-  animation: marquee 30s linear infinite;
+  animation: marquee 25s linear infinite;
 }
