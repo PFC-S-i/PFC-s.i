@@ -4,7 +4,6 @@ export {
   AvatarFallback,
   AvatarImage,
   Badge,
-  Calendar,
   Card,
   CardContent,
   Checkbox,

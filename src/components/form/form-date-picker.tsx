@@ -1,9 +1,8 @@
-import { format } from 'date-fns/format'
-import { ptBR } from 'date-fns/locale'
-import { FieldValues, Path, UseFormReturn } from 'react-hook-form'
+import { format } from "date-fns/format";
+import { ptBR } from "date-fns/locale";
+import { FieldValues, Path, UseFormReturn } from "react-hook-form";
 
-import { ShadcnButton as Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
+import { ShadcnButton as Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -11,24 +10,24 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
+} from "@/components/ui/form";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
-import { icons } from '@/utils/icons'
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { icons } from "@/utils/icons";
 
 type FormFields<T extends FieldValues> = {
-  name: Path<T>
-  label: string
-  disabled?: boolean
-}
+  name: Path<T>;
+  label: string;
+  disabled?: boolean;
+};
 
 interface Props<T extends FieldValues> {
-  form: UseFormReturn<T>
-  fields: FormFields<T>
+  form: UseFormReturn<T>;
+  fields: FormFields<T>;
 }
 
 const FormDatePicker = <T extends FieldValues>({ form, fields }: Props<T>) => {
@@ -45,16 +44,16 @@ const FormDatePicker = <T extends FieldValues>({ form, fields }: Props<T>) => {
                 <PopoverTrigger asChild>
                   <FormControl>
                     <Button
-                      variant={'outline'}
+                      variant={"outline"}
                       disabled={fields.disabled}
                       data-testid={`datepicker-${fields.name}`}
                       className={cn(
-                        'flex w-full items-center justify-center gap-2 rounded-[8px] border-none pl-3 text-left font-normal shadow',
-                        !field.value && 'text-muted-foreground',
+                        "flex w-full items-center justify-center gap-2 rounded-[8px] border-none pl-3 text-left font-normal shadow",
+                        !field.value && "text-muted-foreground"
                       )}
                     >
                       {field.value ? (
-                        format(field.value, 'PPP', { locale: ptBR })
+                        format(field.value, "PPP", { locale: ptBR })
                       ) : (
                         <span className="text-[#718096]">
                           Selecione uma Data
@@ -67,16 +66,7 @@ const FormDatePicker = <T extends FieldValues>({ form, fields }: Props<T>) => {
                 <PopoverContent
                   className="w-auto rounded-[8px] bg-zinc-800 p-0 text-[--primary-foreground]"
                   align="start"
-                >
-                  <Calendar
-                    className="rounded"
-                    locale={ptBR}
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    initialFocus
-                  />
-                </PopoverContent>
+                ></PopoverContent>
               </Popover>
               <FormMessage />
             </FormItem>
@@ -84,7 +74,7 @@ const FormDatePicker = <T extends FieldValues>({ form, fields }: Props<T>) => {
         />
       </div>
     </Form>
-  )
-}
+  );
+};
 
-export { FormDatePicker }
+export { FormDatePicker };
