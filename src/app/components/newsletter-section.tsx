@@ -57,9 +57,13 @@ export function NewsletterSection() {
               placeholder="Seu melhor e-mail"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:primary flex-1"
+              className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:primary flex-1"
             />
-            <Button variant="outline" type="submit">
+            <Button
+              type="submit"
+              variant="outline"
+              className="bg-primary text-white md:bg-transparent md:text-primary md:border md:border-primary"
+            >
               Inscrever
             </Button>
           </form>
