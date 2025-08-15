@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User } from "lucide-react";
 import { Button } from "@/components/button";
 import { NavLinks } from "../../app/components/nav-link";
 
@@ -30,7 +30,14 @@ export function Header() {
           </h1>
         </div>
 
-        <NavLinks />
+        {/* Links e botão de usuário em desktop */}
+        <div className="hidden md:flex items-center gap-4">
+          <NavLinks />
+          <Button variant="outline" className="flex items-center gap-2">
+            <User size={20} />
+            Login
+          </Button>
+        </div>
 
         {/* Hamburger mobile */}
         <div className="md:hidden relative" ref={menuRef}>
@@ -41,27 +48,22 @@ export function Header() {
           {/* Menu dropdown */}
           {isOpen && (
             <div className="absolute right-0 mt-2 w-44 text-foreground bg-background shadow-md rounded-md z-50 p-2 space-y-2">
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => setIsOpen(false)}
+              <a href="#sobre" className="block px-2 py-1">
+                Dashboard
+              </a>
+              <a href="#conteudo" className="block px-2 py-1">
+                Educacional
+              </a>
+              <a href="#newsletter" className="block px-2 py-1">
+                Newsletter
+              </a>
+              {/* Login no menu mobile */}
+              <a
+                href="#login"
+                className="block px-2 py-1 flex items-center gap-2"
               >
-                <a href="#sobre">Dashboard</a>
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => setIsOpen(false)}
-              >
-                <a href="#conteudo">Educacional</a>
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => setIsOpen(false)}
-              >
-                <a href="#newsletter">Newsletter</a>
-              </Button>
+                <User size={18} /> Login
+              </a>
             </div>
           )}
         </div>
