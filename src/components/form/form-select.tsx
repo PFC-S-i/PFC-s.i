@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-'use client'
+"use client";
 
-import React from 'react'
+import React from "react";
 
-import { FieldValues, Path, UseFormReturn } from 'react-hook-form'
+import { FieldValues, Path, UseFormReturn } from "react-hook-form";
 
-import { ShadcnButton as Button } from '@/components/ui/button'
+import { ShadcnButton as Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -13,7 +13,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command'
+} from "@/components/ui/command";
 import {
   Form,
   FormControl,
@@ -21,56 +21,56 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
+} from "@/components/ui/form";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
-import { IOption } from '@/types'
-import { icons, IIcons } from '@/utils'
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { icons, IIcons } from "@/utils";
+import { IOption } from "@/types";
 
 type FormFields<T extends FieldValues> = {
-  name: Path<T>
-  label: string
-  icon: IIcons
-  placeholder: string
-  options: IOption[]
-  disabled?: boolean
-}
+  name: Path<T>;
+  label: string;
+  icon: IIcons;
+  placeholder: string;
+  options: IOption[];
+  disabled?: boolean;
+};
 
 interface Props<T extends FieldValues> {
-  form: UseFormReturn<T>
-  fields: FormFields<T>
+  form: UseFormReturn<T>;
+  fields: FormFields<T>;
 }
 
 const FormSelect = <T extends FieldValues>({ form, fields }: Props<T>) => {
-  const options = React.useMemo(() => fields.options || [], [fields.options])
-  const [inputValue, setInputValue] = React.useState('')
+  const options = React.useMemo(() => fields.options || [], [fields.options]);
+  const [inputValue, setInputValue] = React.useState("");
 
   const filteredOptions = React.useMemo(() => {
-    if (!inputValue) return options
+    if (!inputValue) return options;
     return options.filter((item) =>
-      item.label.toLowerCase().includes(inputValue.toLowerCase()),
-    )
-  }, [inputValue, options])
+      item.label.toLowerCase().includes(inputValue.toLowerCase())
+    );
+  }, [inputValue, options]);
 
   const getCurrentValue = (fieldValue: any) => {
-    if (fieldValue === undefined) return undefined
+    if (fieldValue === undefined) return undefined;
 
     // Convert to string for comparison if the value is a number
     const normalizedFieldValue =
-      typeof fieldValue === 'number' ? String(fieldValue) : fieldValue
+      typeof fieldValue === "number" ? String(fieldValue) : fieldValue;
 
     return (
       options.find((item) => {
         const normalizedItemValue =
-          typeof item.value === 'number' ? String(item.value) : item.value
-        return normalizedItemValue === normalizedFieldValue
-      })?.label ?? 'Selecione uma opção'
-    )
-  }
+          typeof item.value === "number" ? String(item.value) : item.value;
+        return normalizedItemValue === normalizedFieldValue;
+      })?.label ?? "Selecione uma opção"
+    );
+  };
 
   return (
     <Form {...form}>
@@ -94,8 +94,8 @@ const FormSelect = <T extends FieldValues>({ form, fields }: Props<T>) => {
                       aria-expanded="true"
                       aria-controls="select-options"
                       className={cn(
-                        'w-full justify-between border-transparent',
-                        field.value === undefined && 'text-[#718096]',
+                        "w-full justify-between border-transparent",
+                        field.value === undefined && "text-[#718096]"
                       )}
                     >
                       {getCurrentValue(field.value) || fields.placeholder}
@@ -117,9 +117,9 @@ const FormSelect = <T extends FieldValues>({ form, fields }: Props<T>) => {
                       <CommandList className="w-full" id="select-options">
                         {filteredOptions.map((item) => {
                           const isSelected =
-                            typeof field.value === 'number'
+                            typeof field.value === "number"
                               ? String(item.value) === String(field.value)
-                              : item.value === field.value
+                              : item.value === field.value;
 
                           return (
                             <CommandItem
@@ -127,7 +127,7 @@ const FormSelect = <T extends FieldValues>({ form, fields }: Props<T>) => {
                               value={String(item.value)}
                               key={String(item.value)}
                               onSelect={() => {
-                                form.setValue(fields.name, item.value as any)
+                                form.setValue(fields.name, item.value as any);
                               }}
                               aria-selected={isSelected}
                               data-testid={item.label}
@@ -135,12 +135,12 @@ const FormSelect = <T extends FieldValues>({ form, fields }: Props<T>) => {
                               {item.label}
                               <icons.check
                                 className={cn(
-                                  'ml-auto h-4 w-4',
-                                  isSelected ? 'opacity-100' : 'opacity-0',
+                                  "ml-auto h-4 w-4",
+                                  isSelected ? "opacity-100" : "opacity-0"
                                 )}
                               />
                             </CommandItem>
-                          )
+                          );
                         })}
                       </CommandList>
                     </CommandGroup>
@@ -153,7 +153,7 @@ const FormSelect = <T extends FieldValues>({ form, fields }: Props<T>) => {
         )}
       />
     </Form>
-  )
-}
+  );
+};
 
-export { FormSelect }
+export { FormSelect };

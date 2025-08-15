@@ -1,17 +1,17 @@
-import { Table } from '@tanstack/react-table'
+import { Table } from "@tanstack/react-table";
 
-import { Button } from '@/components/button'
+import { Button } from "@/components/button";
 import {
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
   ShadcnSelect,
-} from '@/components/ui/select'
-import { icons } from '@/utils/icons'
+} from "@/components/ui/select";
+import { icons } from "@/utils/icons";
 
 interface DataTablePaginationProps<TData> {
-  table: Table<TData>
+  table: Table<TData>;
 }
 
 export function DataTablePagination<TData>({
@@ -24,8 +24,8 @@ export function DataTablePagination<TData>({
           <p className="text-sm font-medium">Linhas por página</p>
           <ShadcnSelect
             value={`${table.getState().pagination.pageSize}`}
-            onValueChange={(value) => {
-              table.setPageSize(Number(value))
+            onValueChange={(value: string) => {
+              table.setPageSize(Number(value));
             }}
           >
             <SelectTrigger className="h-8 w-[70px]">
@@ -41,7 +41,7 @@ export function DataTablePagination<TData>({
           </ShadcnSelect>
         </div>
         <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-          Página {table.getState().pagination.pageIndex + 1} de{' '}
+          Página {table.getState().pagination.pageIndex + 1} de{" "}
           {table.getPageCount()}
         </div>
         <div className="flex items-center space-x-2">
@@ -84,5 +84,5 @@ export function DataTablePagination<TData>({
         </div>
       </div>
     </div>
-  )
+  );
 }

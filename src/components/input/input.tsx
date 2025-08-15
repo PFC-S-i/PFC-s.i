@@ -1,15 +1,14 @@
-'use client'
-import React, { InputHTMLAttributes } from 'react'
+"use client";
+import React, { InputHTMLAttributes } from "react";
 
-import { withMask } from 'use-mask-input'
-
-import { ShadcnInput } from '@/components/'
-import { icons, IIcons } from '@/utils'
+import { icons, IIcons } from "@/utils";
+import { withMask } from "use-mask-input";
+import { ShadcnInput } from "../ui";
 
 export interface Props extends InputHTMLAttributes<HTMLInputElement> {
-  icon?: IIcons
-  children?: React.ReactNode
-  mask?: string[]
+  icon?: IIcons;
+  children?: React.ReactNode;
+  mask?: string[];
 }
 
 const Input = ({ icon, children, mask, placeholder, ...rest }: Props) => {
@@ -25,11 +24,11 @@ const Input = ({ icon, children, mask, placeholder, ...rest }: Props) => {
           ref={withMask(mask ?? null)}
           placeholder={placeholder}
           {...rest}
-        />{' '}
+        />{" "}
       </div>
       {children}
     </div>
-  )
-}
+  );
+};
 
-export { Input }
+export { Input };

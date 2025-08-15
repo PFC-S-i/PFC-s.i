@@ -1,9 +1,9 @@
-import { Footer, Header } from '@/components/'
+import { Header } from "../header/header";
 
 const Main = ({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) => {
   return (
     <div className="h-full min-h-screen w-full overflow-hidden">
@@ -14,10 +14,9 @@ const Main = ({
             {children}
           </div>
         </div>
-        <Footer />
       </div>
     </div>
-  )
-}
+  );
+};
 
-export { Main }
+export { Main };

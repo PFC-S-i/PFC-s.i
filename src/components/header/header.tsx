@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/button";
-import Link from "next/link";
 import { NavLinks } from "../../app/components/nav-link";
 
 export function Header() {
