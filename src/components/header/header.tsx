@@ -26,7 +26,7 @@ export function Header() {
         {/* Logo */}
         <div className="flex items-center">
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">
-            infoCripto S.i
+            infoCripto
           </h1>
         </div>
 
@@ -52,7 +52,7 @@ export function Header() {
                 Dashboard
               </a>
               <a href="#conteudo" className="block px-2 py-1">
-                Educacional
+                Educacionall
               </a>
               <a href="#newsletter" className="block px-2 py-1">
                 Newsletter
