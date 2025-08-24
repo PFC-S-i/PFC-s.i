@@ -1,4 +1,4 @@
-export { About } from "./about";
+export { About } from "./about/about";
 export { ContentCard } from "./content-card";
 export { ContentSection } from "./content-section";
 export { CurrencyTicker } from "./currency-ticker";
