@@ -398,7 +398,7 @@ export function About() {
             })}
           </div>
 
-          {/* Navegação inferior (desktop) */}
+          {/* Navegação inferior (para desktop) */}
           <div className="mt-5 hidden lg:flex items-center justify-between">
             <Button
               variant="outline"
