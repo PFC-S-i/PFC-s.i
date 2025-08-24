@@ -235,7 +235,13 @@ export function About() {
             </Button>
 
             {filterOpen && (
-              <div className="absolute left-0 top-full mt-2 z-20 w-[min(92vw,800px)] rounded-2xl border bg-background backdrop-blur shadow-lg p-4">
+              <div
+                className="
+                absolute top-full mt-2 z-20
+                w-[min(92vw,800px)] max-w-[calc(100vw-2rem)]
+                left-0 sm:left-auto sm:right-0
+                rounded-2xl border bg-background backdrop-blur shadow-lg p-4"
+              >
                 <input
                   className="w-full rounded-xl shadow-lg px-3 py-2 mb-3"
                   placeholder="Buscar dentro do Top 20"
@@ -254,7 +260,7 @@ export function About() {
                         selectAllVisible(visibleOptions.map((o) => o.id))
                       }
                     >
-                      Selecionar todos (visíveis)
+                      Selecionar todos
                     </Button>
                     <Button variant="outline" onClick={clearFilter}>
                       Limpar
