@@ -1,3 +1,4 @@
+// src/app/components/about/about.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -14,23 +15,27 @@ type Market = {
 };
 
 type CoinOption = { id: string; label: string };
+
 const TOP_COUNT = 20;
 
 export function About() {
+  // Dados do carrossel
   const [data, setData] = useState<Market[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
+  // Opções (Top 20) e filtro
   const [options, setOptions] = useState<CoinOption[]>([]);
   const [optLoading, setOptLoading] = useState(true);
   const [optError, setOptError] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [tempSelection, setTempSelection] = useState<Set<string>>(new Set());
+  // Se for null => usar count=20; se string => usar ids=...
   const [activeIds, setActiveIds] = useState<string | null>(null);
 
-  // carrega Top 20 para filtro
+  // Carrega Top 20 para o dropdown
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -44,6 +49,7 @@ export function About() {
         const opts = (await res.json()) as CoinOption[];
         if (cancelled) return;
         setOptions(opts);
+        // Seleção padrão: todas as 20
         setTempSelection(new Set(opts.map((o) => o.id)));
         setActiveIds(null);
       } catch (e: unknown) {
@@ -62,12 +68,13 @@ export function About() {
     };
   }, []);
 
+  // Fechar dropdown ao clicar fora
   const filterWrapRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    function onDocClick(e: MouseEvent) {
+    function onDocClick(ev: MouseEvent) {
       if (!filterOpen) return;
       const el = filterWrapRef.current;
-      if (el && !el.contains(e.target as Node)) setFilterOpen(false);
+      if (el && !el.contains(ev.target as Node)) setFilterOpen(false);
     }
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
@@ -83,7 +90,8 @@ export function About() {
   }
   function toggleCoin(id: string) {
     const next = new Set(tempSelection);
-    next.has(id) ? next.delete(id) : next.add(id);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
     setTempSelection(next);
   }
   function clearFilter() {
@@ -95,6 +103,7 @@ export function About() {
     setTempSelection(next);
   }
 
+  // Busca local dentro do Top 20
   const visibleOptions = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return options;
@@ -103,16 +112,15 @@ export function About() {
     );
   }, [options, search]);
 
-  // fetch / polling
+  // Fetch / polling
   const controllerRef = useRef<AbortController | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   async function load({ quiet = false }: { quiet?: boolean } = {}) {
     try {
       if (!quiet) setLoading(true);
       setError(null);
 
-      if (controllerRef.current) controllerRef.current.abort();
+      const prev = controllerRef.current;
+      if (prev) prev.abort();
       const ac = new AbortController();
       controllerRef.current = ac;
 
@@ -129,27 +137,31 @@ export function About() {
       setLastUpdated(new Date());
     } catch (e: unknown) {
       const isAbort = e instanceof DOMException && e.name === "AbortError";
-      if (!isAbort) {
+      if (!isAbort)
         setError(e instanceof Error ? e.message : "Falha ao carregar dados");
-      }
     } finally {
       if (!quiet) setLoading(false);
     }
   }
 
+  // Inicia o polling quando as opções estiverem prontas
   useEffect(() => {
-    // só inicia quando já carregou as opções (Top 20) ou deu erro
-    if (optLoading || (options.length === 0 && !optError)) return;
+    const ready = !optLoading && (options.length > 0 || !!optError);
+    if (!ready) return;
 
+    // Primeira carga
     load();
 
-    // use uma variável local em vez do short-circuit com ref
-    const id = setInterval(() => load({ quiet: true }), 30_000);
+    // Atualiza a cada 30s
+    const id = setInterval(() => {
+      load({ quiet: true });
+    }, 30_000);
 
+    // Cleanup
     return () => {
-      clearInterval(id); // ✅ é uma chamada de função
+      clearInterval(id);
       const ctrl = controllerRef.current;
-      if (ctrl) ctrl.abort(); // ✅ if em vez de short-circuit
+      if (ctrl) ctrl.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [optLoading, options.length, optError, activeIds]);
@@ -157,16 +169,18 @@ export function About() {
   async function applyFilter() {
     const chosen = Array.from(tempSelection);
     if (chosen.length === 0) return;
+    // Se todas as 20 estiverem selecionadas, manter activeIds = null (Top 20)
     if (chosen.length === options.length) setActiveIds(null);
     else setActiveIds(chosen.join(","));
     setFilterOpen(false);
     await load({ quiet: false });
   }
 
-  // carrossel + navegação (sem mudanças de tipos)
+  // Carrossel + navegação
   const listRef = useRef<HTMLDivElement | null>(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
+
   function updateNavAvailability() {
     const el = listRef.current;
     if (!el) return;
@@ -199,6 +213,11 @@ export function About() {
   });
   const nf = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
 
+  const selectedCount =
+    activeIds === null
+      ? options.length
+      : activeIds.split(",").filter(Boolean).length;
+
   return (
     <section id="sobre" className="py-20 max-w-6xl mx-auto">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
@@ -212,9 +231,7 @@ export function About() {
               onClick={openFilter}
               tooltipContent="Escolher subset do Top 20"
             >
-              {activeIds === null
-                ? "Filtrar moedas (20)"
-                : `Filtrar moedas (${activeIds.split(",").length})`}
+              Filtrar moedas ({selectedCount})
             </Button>
 
             {filterOpen && (
@@ -237,7 +254,7 @@ export function About() {
                         selectAllVisible(visibleOptions.map((o) => o.id))
                       }
                     >
-                      Selecionar todos
+                      Selecionar todos (visíveis)
                     </Button>
                     <Button variant="outline" onClick={clearFilter}>
                       Limpar
@@ -245,13 +262,14 @@ export function About() {
                   </div>
                 </div>
 
+                {/* Lista com scroll */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[60vh] overflow-auto pr-1">
                   {visibleOptions.map((opt) => {
                     const checked = tempSelection.has(opt.id);
                     return (
                       <label
                         key={opt.id}
-                        className="flex items-center gap-2 rounded-xl px-3 py-2 cursor-pointer hover:bg-primary/50"
+                        className="flex items-center gap-2 rounded-xl px-3 py-2 cursor-pointer hover:bg-primary/10"
                         title={opt.id}
                       >
                         <input
@@ -307,7 +325,7 @@ export function About() {
       </div>
 
       {error && (
-        <div className="text-center text-red-600 bg-red-50 border border-red-200 p-4 rounded-xl mb-6">
+        <div className="text-center text-red-600 bg-red-50 border border-red-200 p-4 rounded-2xl mb-6">
           {error}
         </div>
       )}
@@ -315,7 +333,7 @@ export function About() {
       {loading && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="p-4 rounded-xl border animate-pulse">
+            <div key={i} className="p-4 rounded-2xl border animate-pulse">
               <div className="h-6 w-32 bg-gray-200 rounded mb-2" />
               <div className="h-4 w-20 bg-gray-200 rounded mb-4" />
               <div className="h-10 w-full bg-gray-200 rounded mb-2" />
@@ -344,7 +362,10 @@ export function About() {
               return (
                 <div
                   key={c.id}
-                  className="snap-start shrink-0 w-[85%] sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-2rem)/3)]"
+                  className="
+                    snap-start shrink-0
+                    w-[85%] sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-2rem)/3)]
+                  "
                 >
                   <div className="p-5 rounded-2xl border h-full bg-white/50 shadow-sm">
                     <div className="flex items-center gap-3 mb-3">
@@ -391,6 +412,7 @@ export function About() {
               onClick={() => scrollByViewport(-1)}
               disabled={!canPrev}
               className="min-w-10"
+              tooltipContent="Anterior"
             >
               ‹
             </Button>
@@ -400,6 +422,7 @@ export function About() {
               onClick={() => scrollByViewport(1)}
               disabled={!canNext}
               className="min-w-10"
+              tooltipContent="Próximo"
             >
               ›
             </Button>
