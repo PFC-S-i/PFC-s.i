@@ -237,8 +237,8 @@ export function About() {
             {filterOpen && (
               <div className="absolute left-0 top-full mt-2 z-20 w-[min(92vw,800px)] rounded-2xl border bg-background backdrop-blur shadow-lg p-4">
                 <input
-                  className="w-full rounded-xl border px-3 py-2 mb-3"
-                  placeholder="Buscar dentro do Top 20…"
+                  className="w-full rounded-xl shadow-lg px-3 py-2 mb-3"
+                  placeholder="Buscar dentro do Top 20"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -308,11 +308,6 @@ export function About() {
             )}
           </div>
 
-          {lastUpdated && (
-            <span className="text-sm text-gray-500">
-              Atualizado às {lastUpdated.toLocaleTimeString("pt-BR")}
-            </span>
-          )}
           <Button
             variant="outline"
             onClick={() => load()}
@@ -367,7 +362,7 @@ export function About() {
                     w-[85%] sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-2rem)/3)]
                   "
                 >
-                  <div className="p-5 rounded-2xl border h-full bg-white/50 shadow-sm">
+                  <div className="p-5 rounded-2xl h-full bg-white/50 shadow-sm">
                     <div className="flex items-center gap-3 mb-3">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -416,6 +411,11 @@ export function About() {
             >
               ‹
             </Button>
+            {lastUpdated && (
+              <span className="text-sm text-gray-500">
+                Atualizado às {lastUpdated.toLocaleTimeString("pt-BR")}
+              </span>
+            )}
             <Button
               variant="outline"
               size="icon"
