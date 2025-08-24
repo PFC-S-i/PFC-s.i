@@ -349,7 +349,6 @@ export function About() {
               [scrollbar-width:none] [-ms-overflow-style:none]
               [&::-webkit-scrollbar]:hidden px-1
             "
-            aria-label="Carrossel de cotações"
           >
             {data.map((c) => {
               const change = c.price_change_percentage_24h ?? 0;
@@ -363,7 +362,7 @@ export function About() {
                   "
                 >
                   <div className="p-5 rounded-2xl h-full bg-white/50 shadow-sm">
-                    <div className="flex items-center gap-3 mb-3">
+                    <div className="flex items-center gap-3 mb-5">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={c.image}
@@ -411,11 +410,7 @@ export function About() {
             >
               ‹
             </Button>
-            {lastUpdated && (
-              <span className="text-sm text-gray-500">
-                Atualizado às {lastUpdated.toLocaleTimeString("pt-BR")}
-              </span>
-            )}
+
             <Button
               variant="outline"
               size="icon"
@@ -427,6 +422,11 @@ export function About() {
               ›
             </Button>
           </div>
+          {lastUpdated && (
+            <span className="text-sm text-gray-500">
+              Atualizado às {lastUpdated.toLocaleTimeString("pt-BR")}
+            </span>
+          )}
         </>
       )}
     </section>
