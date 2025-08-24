@@ -399,7 +399,7 @@ export function About() {
           </div>
 
           {/* Navegação inferior (desktop) */}
-          <div className="mt-4 hidden lg:flex items-center justify-between">
+          <div className="mt-5 hidden lg:flex items-center justify-between">
             <Button
               variant="outline"
               size="icon"
