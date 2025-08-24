@@ -59,6 +59,7 @@ import {
   Layers,
   Link,
   Link2,
+  RefreshCcw,
   List,
   ListOrdered,
   Lock,
@@ -93,10 +94,11 @@ import {
   X,
   Hash,
   Star,
-} from 'lucide-react'
+} from "lucide-react";
 
 export const icons = {
   Star,
+  refreshCcw: RefreshCcw,
   hourglass: Hourglass,
   hash: Hash,
   import: Import,
@@ -190,6 +192,6 @@ export const icons = {
   chevronsUpDown: ChevronsUpDown,
   pause: Pause,
   send: Send,
-}
+};
 
-export type IIcons = keyof typeof icons
+export type IIcons = keyof typeof icons;
