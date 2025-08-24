@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata = {
   title: "infoCripto",
-  description: "Site com notícias, cultura e newsletter",
+  description: "Notícias do mundo da cripto e cotações atualizadas",
   icons: {
     icon: "/favicon.ico",
   },
