@@ -394,7 +394,7 @@ export function About() {
                     >
                       {up ? "▲" : "▼"} {nf.format(change)}%
                     </div>
-                    <div className="mt-4 text-xs text-gray-500">
+                    <div className="mt-4 text-xs text-gray-300">
                       MC:{" "}
                       {c.market_cap != null ? nfBRL.format(c.market_cap) : "—"}
                     </div>
