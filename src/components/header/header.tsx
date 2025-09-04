@@ -26,7 +26,7 @@ export function Header() {
         {/* Logo */}
         <div className="flex items-center">
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">
-            <a href="#">infoCripto</a>
+            <a href="/">infoCripto</a>
           </h1>
         </div>
 
@@ -48,9 +48,6 @@ export function Header() {
           {/* Menu dropdown */}
           {isOpen && (
             <div className="absolute right-0 mt-2 min-w-max text-foreground bg-background shadow-md rounded-md z-50 p-2 space-y-2">
-              <a href="/" className="block px-2 py-1">
-                Home
-              </a>
               <a href="#sobre" className="block px-2 py-1">
                 Dashboard
               </a>
