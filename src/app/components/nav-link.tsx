@@ -11,7 +11,7 @@ const links: NavLink[] = [
   { label: "Dashboard", href: "/#sobre" },
   { label: "Educacional", href: "/#conteudo" },
   { label: "Newsletter", href: "/#newsletter" },
-  { label: "Notícias", href: "/news" }, // << aqui é a rota da página
+  { label: "Notícias", href: "components/news" },
 ];
 
 export function NavLinks() {
