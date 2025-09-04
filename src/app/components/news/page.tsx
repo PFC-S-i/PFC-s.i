@@ -21,8 +21,8 @@ export default function NewsPage() {
         const data = await getNews(); // GET /news/
         setItems(data);
         setFiltered(data);
-      } catch (e: any) {
-        setErr(e?.message ?? "Falha ao carregar notícias.");
+      } catch (e: unknown) {
+        setErr(e instanceof Error ? e.message : "Falha ao carregar notícias.");
       } finally {
         setLoading(false);
       }

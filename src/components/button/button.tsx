@@ -16,7 +16,6 @@ const Button = ({
   icon,
   className,
   isLoading = false,
-  tooltipContent,
   ...rest
 }: Props) => {
   return (

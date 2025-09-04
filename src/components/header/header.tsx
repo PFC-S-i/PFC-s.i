@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Menu, X, User } from "lucide-react";
 import { Button } from "@/components/button";
 import { NavLinks } from "../../app/components/nav-link";
+import Link from "next/link";
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -23,10 +24,9 @@ export function Header() {
   return (
     <header className="pt-5 relative">
       <div className="sm:px-6 flex justify-between items-center">
-        {/* Logo */}
         <div className="flex items-center">
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">
-            <a href="/">infoCripto</a>
+            <Link href="/">infoCripto</Link>
           </h1>
         </div>
 

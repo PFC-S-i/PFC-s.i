@@ -2,6 +2,7 @@ export type NewsItem = {
   title: string;
   link: string;
   source: string;
+  image?: string | null;
 };
 
 const BASE_URL =
@@ -57,11 +58,14 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
     // Tipagem genérica T
     return (await res.json()) as T;
-  } catch (err: any) {
-    if (err?.name === "AbortError") {
-      throw new Error(`Requisição para ${url} expirou após ${TIMEOUT_MS}ms`);
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      if (err.name === "AbortError") {
+        throw new Error(`Requisição para ${url} expirou após ${TIMEOUT_MS}ms`);
+      }
+      throw err;
     }
-    throw err;
+    throw new Error(`Erro inesperado: ${String(err)}`);
   } finally {
     clearTimeout(timeout);
   }
