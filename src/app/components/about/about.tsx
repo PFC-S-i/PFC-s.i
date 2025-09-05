@@ -227,7 +227,7 @@ export function About() {
           {/* Filtro (Top 20) */}
           <div ref={filterWrapRef} className="relative">
             <Button
-              variant="outline"
+              className="bg-card border-primary hover:bg-card/10"
               onClick={openFilter}
               tooltipContent="Escolher subset do Top 20"
             >
@@ -315,7 +315,7 @@ export function About() {
           </div>
 
           <Button
-            variant="outline"
+            className="bg-card border-primary hover:bg-card/10"
             onClick={() => load()}
             isLoading={loading}
             tooltipContent="Buscar cotações agora"
@@ -367,7 +367,7 @@ export function About() {
                     w-[85%] sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-2rem)/3)]
                   "
                 >
-                  <div className="p-5 rounded-2xl h-full bg-white/50 shadow-sm">
+                  <div className="p-5 rounded-2xl h-full bg-card shadow-sm">
                     <div className="flex items-center gap-3 mb-5">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img

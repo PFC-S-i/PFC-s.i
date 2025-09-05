@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@/lib/utils"; // opcional: se não tiver, remova e use className direto
+import { cn } from "@/lib/utils";
 
 export type Market = {
   id: string;
@@ -18,13 +18,10 @@ type MarketsProps = {
   items: Market[];
   className?: string;
 
-  /** Ex.: new Intl.NumberFormat('pt-BR',{ style:'currency', currency:'BRL' }) */
   currencyFormatter?: Intl.NumberFormat;
 
-  /** Ex.: new Intl.NumberFormat('pt-BR',{ maximumFractionDigits: 2 }) */
   numberFormatter?: Intl.NumberFormat;
 
-  /** Se true, mostra layout em grade; padrão é carrossel horizontal */
   asGrid?: boolean;
 };
 
@@ -49,7 +46,6 @@ export function Markets({
   }
 
   if (asGrid) {
-    // Modo grade (opcional)
     return (
       <div
         className={cn(
@@ -69,7 +65,7 @@ export function Markets({
     );
   }
 
-  // Modo carrossel (padrão)
+  // Modo carrossel
   return (
     <div
       className={cn(

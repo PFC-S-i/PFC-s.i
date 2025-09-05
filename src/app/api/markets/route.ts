@@ -1,4 +1,3 @@
-// src/app/api/markets/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
 type CGMarketDetail = {

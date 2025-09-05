@@ -1,4 +1,4 @@
-import { CurrencyTicker, Header } from "./components";
+import { Header } from "./components";
 import "./globals.css";
 
 export const metadata = {
@@ -18,7 +18,6 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className="px-4 md:px-10 lg:px-20 xl:px-32 max-w-[1920px] mx-auto bg-background text-foreground">
         <Header />
-        <CurrencyTicker />
         {children}
       </body>
     </html>

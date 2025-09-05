@@ -47,7 +47,7 @@ export function Header() {
 
           {/* Menu dropdown */}
           {isOpen && (
-            <div className="absolute right-0 mt-2 min-w-max text-foreground bg-background shadow-md rounded-md z-50 p-2 space-y-2">
+            <div className="absolute right-0 mt-2 min-w-max text-foreground shadow-md rounded-md z-50 p-2 space-y-2">
               <a href="#sobre" className="block px-2 py-1">
                 Dashboard
               </a>
