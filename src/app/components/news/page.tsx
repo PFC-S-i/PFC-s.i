@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, Input } from "@/components";
 import { getNews, NewsItem } from "@/services/news.service";
-import Loading from "@/app/loading";
 
 export default function NewsPage() {
   const [q, setQ] = useState<string>(""); // sem placeholder
