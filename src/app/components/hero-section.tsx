@@ -4,7 +4,7 @@ import bitcoin from "@/app/img/bitcoin.png";
 
 export function HeroSection() {
   return (
-    <section className="m-4 sm:m-5 rounded-2xl px-4 sm:px-6 lg:px-10 py-12 sm:py-16 md:py-20 text-white">
+    <section className="m-4 sm:m-5 rounded-2xl   py-12 sm:py-16 md:py-20">
       <div
         className="
           mx-auto max-w-7xl
@@ -14,12 +14,12 @@ export function HeroSection() {
         "
       >
         <div className="text-left min-w-0">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 leading-tight">
+          <h2 className="text-2xl md:text-5xl font-semibold mb-4 leading-tight">
             Deixe a
-            <span className="px-2 text-primary rounded-2xl">infoCripto</span>te
+            <span className="px-1 text-primary rounded-2xl">infoCripto</span>te
             ajudar
           </h2>
-          <p className="text-base sm:text-lg md:text-xl text-white/80">
+          <p className="text-base md:text-xl text-white/80">
             Lorem ipsum dolor, sit amet consectetur adipisicing elit. Suscipit,
             earum eius ratione nsequatur possimus! Voluptate maiores voluptates
             quaerat reprehenderit.
