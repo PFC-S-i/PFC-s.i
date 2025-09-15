@@ -2,10 +2,10 @@
 @import url("https://fonts.googleapis.com/css2?family=Limelight&display=swap");
 
 :root {
-  --background: #181a20;
+  --background: #151515;
   --foreground: #ffffff;
   --primary: #1fefa9;
-  --card: #1e2329;
+  --card: #1b1b1b;
 }
 
 @theme inline {

@@ -1,14 +1,43 @@
+// src/app/components/hero-section.tsx
+import Image from "next/image";
+import bitcoin from "@/app/img/bitcoin.png";
+
 export function HeroSection() {
   return (
-    <section className="rounded-2xl m-4 sm:m-5 px-4 text-white py-16 sm:py-24 md:py-32 text-center">
-      <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-        <span className="px-4  text-primary rounded-2xl">infoCripto</span>
-      </h2>
-      <p className="text-base sm:text-lg md:text-xl max-w-2xl mx-auto">
-        Lorem ipsum dolor, sit amet consectetur adipisicing elit. Suscipit,
-        earum eius ratione nsequatur possimus! Voluptate maiores voluptates
-        quaerat reprehenderit.
-      </p>
+    <section className="m-4 sm:m-5 rounded-2xl px-4 sm:px-6 lg:px-10 py-12 sm:py-16 md:py-20 text-white">
+      <div
+        className="
+          mx-auto max-w-7xl
+          grid items-center
+          gap-4 sm:gap-8 lg:gap-12
+          grid-cols-[minmax(0,1fr)_auto]   /* ← sempre duas colunas: texto + imagem */
+        "
+      >
+        <div className="text-left min-w-0">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 leading-tight">
+            Deixe a
+            <span className="px-2 text-primary rounded-2xl">infoCripto</span>te
+            ajudar
+          </h2>
+          <p className="text-base sm:text-lg md:text-xl text-white/80">
+            Lorem ipsum dolor, sit amet consectetur adipisicing elit. Suscipit,
+            earum eius ratione nsequatur possimus! Voluptate maiores voluptates
+            quaerat reprehenderit.
+          </p>
+        </div>
+
+        <div className="flex justify-end">
+          <Image
+            src={bitcoin}
+            alt="Bitcoin"
+            width={420}
+            height={420}
+            priority
+            className="w-[160px] sm:w-[240px] md:w-[360px] lg:w-[420px] h-auto object-contain"
+            sizes="(min-width:1024px) 420px, (min-width:768px) 360px, (min-width:640px) 240px, 160px"
+          />
+        </div>
+      </div>
     </section>
   );
 }

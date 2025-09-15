@@ -52,7 +52,7 @@ export function Header() {
                 Dashboard
               </a>
               <a
-                href="/educacional"
+                href="/educational"
                 className="block px-2 py-1"
                 onClick={close}
               >
