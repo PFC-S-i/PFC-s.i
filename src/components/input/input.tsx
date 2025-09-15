@@ -1,5 +1,5 @@
 "use client";
-import React, { InputHTMLAttributes } from "react";
+import React, { InputHTMLAttributes, useCallback } from "react";
 
 import { icons, IIcons } from "@/utils";
 import { withMask } from "use-mask-input";
@@ -8,10 +8,19 @@ import { ShadcnInput } from "../ui";
 export interface Props extends InputHTMLAttributes<HTMLInputElement> {
   icon?: IIcons;
   children?: React.ReactNode;
-  mask?: string[];
+  mask?: string | string[];
 }
 
 const Input = ({ icon, children, mask, placeholder, ...rest }: Props) => {
+  const maskedRef = useCallback(
+    (el: HTMLInputElement | null) => {
+      if (!el || !mask) return;
+      const apply = withMask(mask);
+      apply(el);
+    },
+    [mask]
+  );
+
   return (
     <div className="flex w-full items-center justify-between gap-1 border-none">
       <div className="flex w-full items-center gap-1 rounded shadow">
@@ -21,10 +30,10 @@ const Input = ({ icon, children, mask, placeholder, ...rest }: Props) => {
           </div>
         )}
         <ShadcnInput
-          ref={withMask(mask ?? null)}
+          ref={mask ? maskedRef : undefined}
           placeholder={placeholder}
           {...rest}
-        />{" "}
+        />
       </div>
       {children}
     </div>
