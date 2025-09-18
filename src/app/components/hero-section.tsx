@@ -1,4 +1,3 @@
-// src/app/components/hero-section.tsx
 import Image from "next/image";
 import bitcoin from "@/app/img/bitcoin.png";
 
@@ -15,8 +14,8 @@ export function HeroSection() {
       >
         <div className="text-left min-w-0">
           <h2 className="text-2xl md:text-5xl font-semibold mb-4 leading-tight">
-            Deixe a
-            <span className="px-1 text-primary rounded-2xl">infoCripto</span>te
+            Deixe a{""}
+            <span className="px-3 text-primary rounded-2xl">infoCrypto</span>te
             ajudar
           </h2>
           <p className="text-base md:text-xl text-white/80">
