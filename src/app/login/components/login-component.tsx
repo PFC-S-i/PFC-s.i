@@ -1,12 +1,14 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Button, Input } from "@/components";
 import { PasswordInput } from "@/components/password-input/password-input";
+
+// 👇 importa o service
+import { login } from "@/services/login.service";
 
 function LoginComponent() {
   const router = useRouter();
@@ -20,7 +22,6 @@ function LoginComponent() {
     e.preventDefault();
     setError(null);
 
-    // validação simples
     if (!email || !password) {
       setError("Informe e-mail e senha.");
       return;
@@ -29,13 +30,13 @@ function LoginComponent() {
     try {
       setIsLoading(true);
 
-      // simula chamada de login
-      await new Promise<void>((resolve) => setTimeout(resolve, 500));
+      // Chama o service de login
+      await login({ email, password });
 
-      // redireciona para uma rota privada
-      router.push("/dashboard");
-    } catch (err) {
-      setError("Não foi possível entrar. Tente novamente.");
+      // Redireciona para a home "/" após logar
+      router.push("/");
+    } catch (err: any) {
+      setError(err?.message || "Não foi possível entrar. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
