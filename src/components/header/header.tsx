@@ -5,10 +5,12 @@ import { Menu, X, User } from "lucide-react";
 import { Button } from "@/components/button";
 import { NavLinks } from "../../app/components/nav-link";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // Fechar menu ao clicar fora
   useEffect(() => {
@@ -33,7 +35,11 @@ export function Header() {
         {/* Links e botão de usuário em desktop */}
         <div className="hidden md:flex items-center gap-4">
           <NavLinks />
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={() => router.push("/login")}
+          >
             <User size={20} />
             Entrar / Cadastrar
           </Button>
@@ -47,7 +53,7 @@ export function Header() {
 
           {/* Menu dropdown */}
           {isOpen && (
-            <div className="absolute right-0 mt-2 min-w-max text-foreground shadow-md rounded-md z-50 p-2 space-y-2">
+            <div className="absolute right-0 mt-2 min-w-max text-foreground bg-background shadow-md rounded-md z-50 p-2 space-y-2">
               <a href="#sobre" className="block px-2 py-1">
                 Dashboard
               </a>
