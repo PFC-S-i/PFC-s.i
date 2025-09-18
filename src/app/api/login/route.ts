@@ -1,6 +1,11 @@
 // src/app/api/login/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
+// teste para logar sem validação do back, apenas para ver o fluxo funcionando
+// export async function POST() {
+//   return NextResponse.json({ access_token: "header.payload.signature" }, { status: 200 });
+// }
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
 

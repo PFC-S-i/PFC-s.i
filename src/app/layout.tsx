@@ -1,5 +1,6 @@
-import { Header } from "./components";
+import { AuthProvider } from "@/context/auth.context";
 import "./globals.css";
+import Header from "@/components/header/header";
 
 export const metadata = {
   title: "infoCrypto",
@@ -17,8 +18,10 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className="px-4 md:px-10 lg:px-20 xl:px-32 max-w-[1920px] mx-auto bg-background text-foreground">
-        <Header />
-        {children}
+        <AuthProvider>
+          <Header />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
