@@ -2,7 +2,7 @@ import { Header } from "./components";
 import "./globals.css";
 
 export const metadata = {
-  title: "infoCripto",
+  title: "infoCrypto",
   description: "Notícias do mundo da cripto e cotações atualizadas",
   icons: {
     icon: "/favicon.ico",
