@@ -7,7 +7,7 @@ import { Menu, X, User, LogOut } from "lucide-react";
 
 import { Button } from "@/components/button";
 import { NavLinks } from "@/app/components/nav-link";
-import { useAuth } from "@/context/auth.context"; // << integra com o contexto
+import { useAuth } from "@/context/auth.context";
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
