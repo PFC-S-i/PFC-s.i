@@ -1,4 +1,3 @@
-// src/app/(auth)/login/login-component.tsx
 "use client";
 
 import { FormEvent, useState } from "react";
@@ -29,7 +28,6 @@ function LoginComponent() {
     try {
       setIsLoading(true);
 
-      // Chama o service de login
       await login({ email: email.trim(), password });
 
       // Redireciona para a home "/" após logar
