@@ -1,3 +1,4 @@
+// src/app/(auth)/login/login-component.tsx
 "use client";
 
 import { FormEvent, useState } from "react";
@@ -6,55 +7,7 @@ import { useRouter } from "next/navigation";
 
 import { Button, Input } from "@/components";
 import { PasswordInput } from "@/components/password-input/password-input";
-
-// 👇 importa o service
-import { login } from "@/services/login.service";
-
-/**
- * Extrai uma mensagem legível de um erro desconhecido (fetch/axios/FastAPI).
- * Evita o uso de `any` e respeita o ESLint.
- */
-function getErrorMessage(err: unknown): string {
-  const fallback = "Não foi possível entrar. Tente novamente.";
-
-  // Erros padrão do JS
-  if (err instanceof Error && err.message) return err.message;
-
-  // Objetos genéricos (ex.: axios error, Response JSON do backend)
-  if (typeof err === "object" && err !== null) {
-    // axios: err.response?.data
-    const maybeResponse = (err as Record<string, unknown>)["response"];
-    if (typeof maybeResponse === "object" && maybeResponse !== null) {
-      const data = (maybeResponse as Record<string, unknown>)["data"];
-
-      if (typeof data === "string") return data;
-
-      if (typeof data === "object" && data !== null) {
-        // FastAPI costuma enviar { detail: string | { msg: string }[] }
-        const detail = (data as Record<string, unknown>)["detail"];
-        if (typeof detail === "string") return detail;
-
-        if (Array.isArray(detail) && detail.length > 0) {
-          const first = detail[0];
-          if (first && typeof first === "object") {
-            const msg = (first as Record<string, unknown>)["msg"];
-            if (typeof msg === "string") return msg;
-          }
-        }
-
-        const message = (data as Record<string, unknown>)["message"];
-        if (typeof message === "string") return message;
-      }
-    }
-
-    // Alguns backends enviam { message: "..." }
-    const message = (err as Record<string, unknown>)["message"];
-    if (typeof message === "string") return message;
-  }
-
-  // Fallback
-  return fallback;
-}
+import { login, getErrorMessage } from "@/services/login.service";
 
 function LoginComponent() {
   const router = useRouter();
@@ -77,7 +30,7 @@ function LoginComponent() {
       setIsLoading(true);
 
       // Chama o service de login
-      await login({ email, password });
+      await login({ email: email.trim(), password });
 
       // Redireciona para a home "/" após logar
       router.push("/");
@@ -89,7 +42,7 @@ function LoginComponent() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="w-full grid gap-4">
+    <form onSubmit={onSubmit} className="w-full grid gap-4" noValidate>
       <div className="w-full">
         <Input
           type="email"
@@ -98,6 +51,8 @@ function LoginComponent() {
           placeholder="E-mail"
           icon="email"
           required
+          autoComplete="email"
+          inputMode="email"
           className="w-full rounded border"
         />
       </div>
@@ -109,11 +64,16 @@ function LoginComponent() {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Senha"
           required
+          autoComplete="current-password"
           className="w-full rounded border"
         />
       </div>
 
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && (
+        <p className="text-sm text-red-500" role="alert" aria-live="polite">
+          {error}
+        </p>
+      )}
 
       <Link
         href="/forgot-my-password"
@@ -126,6 +86,7 @@ function LoginComponent() {
         variant="default"
         type="submit"
         disabled={isLoading}
+        aria-busy={isLoading}
         className="w-full px-4 py-2"
       >
         {isLoading ? "Entrando..." : "Entrar"}

@@ -1,35 +1,30 @@
-// src/services/login.service.ts
+"use client";
+
 export type LoginRequest = { email: string; password: string; name?: string };
 export type LoginResponse = { access_token: string };
+export type AuthUser = { id?: string; email?: string; name?: string };
 
-type DecodedJwt = {
-  name?: string;
-  email?: string;
-  sub?: string;
-  [k: string]: unknown;
-};
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") ||
+  "http://localhost:8000";
 
 const TOKEN_KEY = "auth_token";
 const USER_KEY = "auth_user";
 
-// ========= helpers de storage =========
-export function setAuthToken(token: string) {
-  if (typeof window !== "undefined") localStorage.setItem(TOKEN_KEY, token);
-}
-export function getAuthToken() {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
-}
-export function clearAuthToken() {
+export const setAuthToken = (t: string) => {
+  if (typeof window !== "undefined") localStorage.setItem(TOKEN_KEY, t);
+};
+export const getAuthToken = () =>
+  typeof window === "undefined" ? null : localStorage.getItem(TOKEN_KEY);
+export const clearAuthToken = () => {
   if (typeof window !== "undefined") localStorage.removeItem(TOKEN_KEY);
-}
+};
 
-export type AuthUser = { name?: string; email?: string; id?: string };
-export function setAuthUser(user: AuthUser) {
+export const setAuthUser = (u: AuthUser) => {
   if (typeof window !== "undefined")
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-}
-export function getAuthUser(): AuthUser | null {
+    localStorage.setItem(USER_KEY, JSON.stringify(u));
+};
+export const getAuthUser = (): AuthUser | null => {
   if (typeof window === "undefined") return null;
   const raw = localStorage.getItem(USER_KEY);
   if (!raw) return null;
@@ -38,94 +33,123 @@ export function getAuthUser(): AuthUser | null {
   } catch {
     return null;
   }
-}
-export function clearAuthUser() {
+};
+export const clearAuthUser = () => {
   if (typeof window !== "undefined") localStorage.removeItem(USER_KEY);
-}
+};
 
-// ========= utils =========
-function decodeJwt<T = DecodedJwt>(token: string): T | null {
+function decodeJwt(token: string): Record<string, unknown> | null {
   try {
-    const [, payload] = token.split(".");
-    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
-    return JSON.parse(json) as T;
+    const [, payloadB64] = token.split(".");
+    if (!payloadB64) return null;
+
+    const b64 = payloadB64.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "===".slice((b64.length + 3) % 4);
+
+    try {
+      return JSON.parse(atob(padded));
+    } catch {
+      const bin = atob(padded);
+      const utf8 = decodeURIComponent(
+        Array.from(
+          bin,
+          (c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0")
+        ).join("")
+      );
+      return JSON.parse(utf8);
+    }
   } catch {
     return null;
   }
 }
 
-function notifyAuthChanged() {
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event("auth:changed"));
+function isExpired(payload: Record<string, unknown> | null): boolean {
+  const exp =
+    typeof payload?.["exp"] === "number"
+      ? (payload["exp"] as number)
+      : undefined;
+  if (!exp) return false;
+  const now = Math.floor(Date.now() / 1000);
+  return exp <= now;
+}
+
+export function authHeaders(): HeadersInit {
+  const token = getAuthToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export function getErrorMessage(err: unknown): string {
+  if (typeof err === "string") return err;
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === "object") {
+    const anyErr = err as Record<string, unknown>;
+    if (typeof anyErr.message === "string") return anyErr.message;
+    if (typeof anyErr.detail === "string") return anyErr.detail;
+    if (Array.isArray(anyErr.detail) && anyErr.detail.length > 0) {
+      const first = anyErr.detail[0] as Record<string, unknown>;
+      if (typeof first?.msg === "string") return first.msg;
+    }
   }
+  return "Não foi possível completar a ação. Tente novamente.";
 }
 
-// -------- tipos/guards para lidar com `detail` da API --------
-type ApiDetailArrayItem = { msg?: string; [k: string]: unknown };
-type ApiErrorDetail = string | ApiDetailArrayItem[] | unknown;
-
-function isDetailArray(detail: ApiErrorDetail): detail is ApiDetailArrayItem[] {
-  return Array.isArray(detail);
-}
-
-function isStringDetail(detail: ApiErrorDetail): detail is string {
-  return typeof detail === "string";
-}
-
-type ApiMaybeError = Partial<Record<"detail", ApiErrorDetail>>;
-
-// ========= ações =========
-export async function login(payload: LoginRequest): Promise<LoginResponse> {
-  // sem timeout para não abortar durante cold start do backend
-  const res = await fetch(`/api/login`, {
+export async function login({
+  email,
+  password,
+}: LoginRequest): Promise<AuthUser> {
+  const res = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify(payload),
-    cache: "no-store",
+    headers: { "Content-Type": "application/json", accept: "application/json" },
+    body: JSON.stringify({ email, password }),
   });
 
-  const data: unknown = await res.json().catch(() => ({}));
-
   if (!res.ok) {
-    let message = "Não foi possível entrar. Verifique suas credenciais.";
-    const detail = (data as ApiMaybeError).detail;
-
-    if (isDetailArray(detail) && detail[0]?.msg) {
-      message = detail[0].msg ?? message;
-    } else if (isStringDetail(detail)) {
-      message = detail;
+    let message = `Erro ${res.status} ao autenticar.`;
+    try {
+      const data = await res.json();
+      if (typeof data?.message === "string") message = data.message;
+      else if (typeof data?.detail === "string") message = data.detail;
+      else if (Array.isArray(data?.detail) && data.detail[0]?.msg)
+        message = String(data.detail[0].msg);
+    } catch {
+      const txt = await res.text();
+      if (txt) message = txt;
     }
-
     throw new Error(message);
   }
 
-  const { access_token } = (data as LoginResponse) ?? {};
-  if (!access_token) {
-    throw new Error("Resposta inválida do servidor (sem access_token).");
+  const data = (await res.json()) as LoginResponse;
+  if (!data?.access_token)
+    throw new Error("Resposta inválida: access_token ausente.");
+
+  setAuthToken(data.access_token);
+
+  const payload = decodeJwt(data.access_token);
+  if (isExpired(payload)) {
+    logout();
+    throw new Error("Sua sessão expirou. Faça login novamente.");
   }
 
-  setAuthToken(access_token);
+  const user: AuthUser = {
+    id:
+      typeof payload?.["sub"] === "string"
+        ? (payload["sub"] as string)
+        : undefined,
+    email:
+      typeof payload?.["email"] === "string"
+        ? (payload["email"] as string)
+        : undefined,
+    name:
+      typeof payload?.["name"] === "string"
+        ? (payload["name"] as string)
+        : undefined,
+  };
 
-  const decoded = decodeJwt<DecodedJwt>(access_token);
-  setAuthUser({
-    name: decoded?.name,
-    email: decoded?.email ?? payload.email,
-    id: decoded?.sub,
-  });
-
-  // avisa o Provider/Header na MESMA aba
-  notifyAuthChanged();
-
-  return { access_token };
+  setAuthUser(user);
+  return user;
 }
 
 export function logout() {
   clearAuthToken();
   clearAuthUser();
-  notifyAuthChanged(); // avisa a UI
-}
-
-export function getAuthHeader(): Record<string, string> {
-  const t = getAuthToken();
-  return t ? { Authorization: `Bearer ${t}` } : {};
 }
