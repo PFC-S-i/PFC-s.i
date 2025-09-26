@@ -144,15 +144,12 @@ export default function NewsCarousel() {
       aria-label="Últimas notícias"
       className="mx-auto w-full max-w-5xl space-y-2 py-2"
     >
-      <div className="flex items-center justify-between px-2">
-        <h2 className="text-lg text-foreground">
+      <div className="flex items-center text-center justify-center px-2">
+        <h2 className="text-xl text-foreground">
           Acompanhe as principais{" "}
           <span className="font-bold text-primary">notícias</span> sobre o mundo
           cripto
         </h2>
-        <Link href="/news" className="text-sm hover:text-primary">
-          Ver todas
-        </Link>
       </div>
 
       <div className="relative">
