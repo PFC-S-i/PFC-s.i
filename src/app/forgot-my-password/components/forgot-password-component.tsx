@@ -38,7 +38,7 @@ function ForgotPasswordComponent() {
           <Button
             variant="default"
             className="w-full"
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/login")}
           >
             Voltar ao login
           </Button>
