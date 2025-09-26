@@ -102,7 +102,7 @@ export function Header() {
               </Link>
 
               <Link
-                href="/buscas"
+                href="/news"
                 className="block px-2 py-1"
                 onClick={() => setIsOpen(false)}
               >
