@@ -19,9 +19,11 @@ export function HeroSection() {
             ajudar
           </h2>
           <p className="text-base md:text-xl text-white/80">
-            Lorem ipsum dolor, sit amet consectetur adipisicing elit. Suscipit,
-            earum eius ratione nsequatur possimus! Voluptate maiores voluptates
-            quaerat reprehenderit.
+            A infoCrypto reúne, em um só lugar, notícias de fontes confiáveis, 
+            preços em tempo real e conteúdos educativos que explicam do básico ao avançado. 
+            Crie sua conta, personalize seus favoritos e acompanhe um painel simples e 
+            direto para entender o que realmente importa no mercado. Sem complicação, sem ruído: aprenda, 
+            compare e decida melhor.
           </p>
         </div>
 

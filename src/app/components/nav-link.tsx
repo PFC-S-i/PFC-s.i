@@ -8,10 +8,11 @@ interface NavLink {
 }
 
 const links: NavLink[] = [
-  { label: "Dashboard", href: "/#sobre" },
   { label: "Educacional", href: "/educational" },
-  { label: "Newsletter", href: "/#newsletter" },
+  { label: "Criptomoedas", href: "/criptomoedas" },
   { label: "Notícias", href: "/news" },
+  { label: "Newsletter", href: "/#newsletter" },
+  { label: "Perfil", href: "/profile" },
 ];
 
 export function NavLinks() {

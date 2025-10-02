@@ -4,3 +4,5 @@ export { ContentSection } from "./content-section";
 
 export { HeroSection } from "./hero-section";
 export { NewsletterSection } from "./newsletter-section";
+export { TeamSection } from "./team-section";
+export { FeatureCardsSection } from "./feature-cards";

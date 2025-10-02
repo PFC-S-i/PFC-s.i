@@ -1,0 +1,79 @@
+"use client";
+
+import Image, { StaticImageData } from "next/image";
+
+// como suas imagens estão em src/, use o alias "@/"
+// (ele já existe no seu projeto pois você usa "@/components", etc.)
+import gu from "@/gu.jpg";
+import eu from "@/eu.jpg";
+import moura from "@/moura.jpg";
+
+type Member = {
+  name: string;
+  role: string;
+  src: StaticImageData;
+  alt?: string;
+};
+
+export function TeamSection() {
+  const members: Member[] = [
+    {
+      name: "Gustavo Fernandes",
+      role: "Front-end",
+      src: gu,
+      alt: "Foto de Gustavo Fernandes",
+    },
+    {
+      name: "João Vitor Bonifácio",
+      role: "Back-end",
+      src: eu,
+      alt: "Foto de João Vitor Bonifácio",
+    },
+    {
+      name: "Fernando Moura",
+      role: "Back-end",
+      src: moura,
+      alt: "Foto de Fernando Moura",
+    },
+  ];
+
+  return (
+    <section className="w-full py-12">
+      <h2 className="text-center text-2xl md:text-3xl font-semibold mb-8">
+        Conheça nosso{" "}
+        <span className="px-3 text-primary rounded-2xl">Time</span>
+      </h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {members.map((m, i) => (
+          <article
+            key={m.name}
+            className="relative rounded-2xl border border-white/5 bg-[#1B1B1B] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] hover:border-white/10 transition-colors"
+          >
+            {/* Glow atrás da foto */}
+            <div className="pointer-events-none absolute inset-0 -z-10">
+              <div className="absolute left-1/2 top-10 -translate-x-1/2 h-40 w-40 rounded-full bg-emerald-500/20 blur-2xl" />
+            </div>
+
+            <div className="mx-auto h-40 w-40 rounded-full ring-1 ring-white/10 overflow-hidden">
+              <Image
+                src={m.src}
+                alt={m.alt ?? m.name}
+                width={160}
+                height={160}
+                className="h-40 w-40 object-cover"
+                placeholder="blur"
+                priority={i === 0}
+              />
+            </div>
+
+            <div className="mt-5 text-center">
+              <h3 className="text-lg font-semibold">{m.name}</h3>
+              <p className="text-sm text-white/60">{m.role}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
