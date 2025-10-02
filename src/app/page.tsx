@@ -1,6 +1,12 @@
 "use client";
 
-import { ContentSection, About, HeroSection, NewsletterSection, TeamSection, FeatureCardsSection } from "./components";
+import {
+  About,
+  HeroSection,
+  NewsletterSection,
+  TeamSection,
+  FeatureCardsSection,
+} from "./components";
 import NewsCarousel from "./components/news-carousel";
 
 export default function HomePage() {
@@ -11,7 +17,6 @@ export default function HomePage() {
       <NewsCarousel />
       <About />
       <TeamSection />
-      {/* <ContentSection /> */}
       <NewsletterSection />
     </div>
   );
