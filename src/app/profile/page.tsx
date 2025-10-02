@@ -1,6 +1,8 @@
+// app/profile/page.tsx
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Star } from "lucide-react";
 import { Button } from "@/components/button";
 
@@ -25,6 +27,11 @@ const fmtBRL = (v: number | null) =>
 
 const fmtPct = (v: number | null) =>
   v == null ? "—" : `${v > 0 ? "+" : ""}${v.toFixed(2)}%`;
+
+// helper para extrair mensagem de erro de forma typesafe
+function getErrMsg(e: unknown) {
+  return e instanceof Error ? e.message : String(e ?? "Erro desconhecido");
+}
 
 export default function ProfilePageDemo() {
   // estado "mockado" para visualizar o front
@@ -89,8 +96,8 @@ export default function ProfilePageDemo() {
 
       await new Promise((r) => setTimeout(r, 600));
       setSuccess("Informações atualizadas (DEMO).");
-    } catch (e: any) {
-      setError(e?.message || "Não foi possível salvar (DEMO).");
+    } catch (e: unknown) {
+      setError(getErrMsg(e) || "Não foi possível salvar (DEMO).");
     } finally {
       setSaveLoading(false);
     }
@@ -117,8 +124,8 @@ export default function ProfilePageDemo() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-    } catch (e: any) {
-      setPwdError(e?.message || "Não foi possível alterar (DEMO).");
+    } catch (e: unknown) {
+      setPwdError(getErrMsg(e) || "Não foi possível alterar (DEMO).");
     } finally {
       setPwdLoading(false);
     }
@@ -219,7 +226,13 @@ export default function ProfilePageDemo() {
                 <div className="opacity-80">{c.rank ?? "—"}</div>
 
                 <div className="flex items-center gap-3">
-                  <img src={c.image} alt={c.name} className="size-6 rounded-full" />
+                  <Image
+                    src={c.image}
+                    alt={c.name}
+                    width={24}
+                    height={24}
+                    className="rounded-full"
+                  />
                   <div className="flex flex-col">
                     <span className="font-medium">{c.name}</span>
                     <span className="text-xs opacity-60">{c.symbol}</span>
@@ -245,7 +258,11 @@ export default function ProfilePageDemo() {
                     aria-label="Favorito"
                     disabled
                   >
-                    <Star fill="currentColor" className="text-yellow-400" strokeWidth={1.5} />
+                    <Star
+                      fill="currentColor"
+                      className="text-yellow-400"
+                      strokeWidth={1.5}
+                    />
                   </button>
                 </div>
               </div>
