@@ -3,9 +3,8 @@
 import Link from "next/link";
 import Image, { type StaticImageData } from "next/image";
 
-// 👇 a partir de src/app/components → volte para src com "../../"
 import imgEducacional from "../../educacional.webp";
-import imgCriptomoedas from "../../Criptomoedas.jpg"; // atenção ao C maiúsculo
+import imgCriptomoedas from "../../Criptomoedas.jpg";
 import imgNoticias from "../../noticias.jpg";
 
 type Feature = {
@@ -54,7 +53,7 @@ export function FeatureCardsSection() {
             <li key={f.title}>
               <Link
                 href={f.href}
-                className="group block rounded-3xl border border-white/5 bg-[#1B1B1B] p-6 md:p-8 lg:p-10 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] hover:border-white/10 transition-colors"
+                className="group block rounded-3xl border border-white/5 bg-[#1B1B1B] p-6 md:p-8 lg:p-10 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] hover:border-primary/20 transition-colors"
               >
                 <div
                   className={[
@@ -89,8 +88,20 @@ export function FeatureCardsSection() {
                     >
                       <span className="inline-flex items-center gap-2">
                         Acessar
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="transition-transform group-hover:translate-x-0.5">
-                          <path d="M5 12h14m0 0-5-5m5 5-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          className="transition-transform group-hover:translate-x-0.5"
+                        >
+                          <path
+                            d="M5 12h14m0 0-5-5m5 5-5 5"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
                         </svg>
                       </span>
                     </div>

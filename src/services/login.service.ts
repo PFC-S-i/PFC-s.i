@@ -97,7 +97,7 @@ export async function login({
   email,
   password,
 }: LoginRequest): Promise<AuthUser> {
-  const res = await fetch(`${API_URL}/auth/login`, {
+  const res = await fetch(`${API_URL}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json", accept: "application/json" },
     body: JSON.stringify({ email, password }),
