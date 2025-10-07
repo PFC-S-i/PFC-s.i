@@ -15,9 +15,6 @@ export const TIMEOUT_MS = 12_000;
 
 function resolveUrl(path: string) {
   const p = path.startsWith("/") ? path : `/${path}`;
-
-  if (p.startsWith("/api/")) return p;
-
   return `${BASE_URL}${p}`;
 }
 

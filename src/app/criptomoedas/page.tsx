@@ -147,13 +147,13 @@ export default function CriptomoedasPage() {
 
           {/* nome + símbolo */}
           <div className="flex items-center gap-3">
-            <Image
+            {/* <Image
               src={c.image}
               alt={c.name}
               width={24}
               height={24}
               className="rounded-full"
-            />
+            /> */}
             <div className="flex flex-col">
               <span className="font-medium">{c.name}</span>
               <span className="text-xs opacity-60">

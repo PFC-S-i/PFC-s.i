@@ -149,13 +149,13 @@ function FavoriteRow({ fav }: { fav: Fav }) {
       <div className="opacity-80">{fav.rank ?? "—"}</div>
 
       <div className="flex items-center gap-3">
-        <Image
+        {/* <Image
           src={fav.image}
           alt={fav.name}
           width={24}
           height={24}
           className="rounded-full"
-        />
+        /> */}
         <div className="flex flex-col">
           <span className="font-medium">{fav.name}</span>
           <span className="text-xs opacity-60">{fav.symbol}</span>
