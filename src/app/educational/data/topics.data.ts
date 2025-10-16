@@ -16,21 +16,25 @@ export const EDUCATIONAL_TOPICS: ITopic[] = [
     slug: "o-que-sao-criptomoedas",
     title: "O que são Criptomoedas?",
     img: criptomoedas,
+    route: "criptomoedas", // 👉 vai para /educational/criptomoedas
   },
   {
     slug: "como-funciona-a-blockchain",
     title: "Como funciona a Blockchain?",
     img: blockchain,
+    route: "blockchain", // 👉 vai para /educational/blockchain
   },
   {
     slug: "saiba-mais-sobre-bitcoin",
     title: "Saiba mais sobre o Bitcoin",
     img: bitcoin,
+    route: "bitcoin", // opcional, segue o mesmo padrão
   },
   {
     slug: "smart-contracts",
     title: "Ethereum e a ideia de “smart contracts”",
     img: ethereum,
+    // route: "ethereum"               // se quiser /educational/ethereum
   },
   { slug: "tipos-de-carteiras", title: "Tipos de carteiras", img: carteiras },
   {
