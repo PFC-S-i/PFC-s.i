@@ -3,7 +3,6 @@
 import {
   About,
   HeroSection,
-  NewsletterSection,
   TeamSection,
   FeatureCardsSection,
 } from "./components";
@@ -17,7 +16,6 @@ export default function HomePage() {
       <NewsCarousel />
       <About />
       <TeamSection />
-      <NewsletterSection />
     </div>
   );
 }

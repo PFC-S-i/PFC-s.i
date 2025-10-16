@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import Image from "next/image";
 import { Star } from "lucide-react";
 
 type Market = {

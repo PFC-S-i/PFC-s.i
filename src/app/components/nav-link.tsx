@@ -11,8 +11,6 @@ const links: NavLink[] = [
   { label: "Educacional", href: "/educational" },
   { label: "Criptomoedas", href: "/criptomoedas" },
   { label: "Notícias", href: "/news" },
-  { label: "Newsletter", href: "/#newsletter" },
-  { label: "Perfil", href: "/profile" },
 ];
 
 export function NavLinks() {

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { Menu, X, User, LogOut } from "lucide-react";
+import { Menu, X, User } from "lucide-react";
 
 import { Button } from "@/components/button";
 import { NavLinks } from "@/app/components/nav-link";
@@ -15,9 +15,10 @@ export function Header() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const { isAuthenticated, user, logout } = useAuth();
-  const displayName =
-    user?.name || (user?.email ? user.email.split("@")[0] : "Usuário");
+  const { isAuthenticated } = useAuth();
+
+  // Evita “flash”: só renderiza ações quando sabemos se está logado
+  const isAuthKnown = typeof isAuthenticated === "boolean";
 
   // Fechar menu ao clicar fora
   useEffect(() => {
@@ -49,7 +50,19 @@ export function Header() {
         <div className="hidden md:flex items-center gap-4">
           <NavLinks />
 
-          {!isAuthenticated ? (
+          {/* Perfil (autenticado) */}
+          {isAuthKnown && isAuthenticated ? (
+            <Link
+              href="/profile"
+              className="flex items-center gap-2 rounded-md border border-white/10 px-3 py-1.5 hover:bg-white/5"
+            >
+              <User size={18} className="text-primary" />
+              <span>Perfil</span>
+            </Link>
+          ) : null}
+
+          {/* Entrar / Cadastrar (não autenticado) */}
+          {isAuthKnown && !isAuthenticated ? (
             <Button
               variant="outline"
               className="flex items-center gap-2"
@@ -58,22 +71,7 @@ export function Header() {
               <User size={20} />
               Entrar / Cadastrar
             </Button>
-          ) : (
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 rounded-md border border-white/10 px-3 py-1.5">
-                <User size={18} />
-                <span className="max-w-[160px] truncate">{displayName}</span>
-              </div>
-              <Button
-                variant="outline"
-                className="flex items-center gap-2"
-                onClick={logout}
-              >
-                <LogOut size={18} />
-                Sair
-              </Button>
-            </div>
-          )}
+          ) : null}
         </div>
 
         {/* Hamburger (mobile) */}
@@ -109,16 +107,22 @@ export function Header() {
                 Notícias
               </Link>
 
-              <Link
-                href="/newsletter"
-                className="block px-2 py-1"
-                onClick={() => setIsOpen(false)}
-              >
-                Newsletter
-              </Link>
+              {/* 🔹 Perfil (só quando autenticado) */}
+              {isAuthKnown && isAuthenticated ? (
+                <Link
+                  href="/profile"
+                  className="block px-2 py-1"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <span className="flex items-center gap-2">
+                    <User size={18} className="text-primary" />
+                    <span>Perfil</span>
+                  </span>
+                </Link>
+              ) : null}
 
-              {/* Ação de autenticação no mobile */}
-              {!isAuthenticated ? (
+              {/* Entrar / Cadastrar (não autenticado) */}
+              {isAuthKnown && !isAuthenticated ? (
                 <button
                   className="block w-full text-left px-2 py-1 flex items-center gap-2"
                   onClick={() => {
@@ -129,18 +133,7 @@ export function Header() {
                   <User size={18} className="text-primary" />
                   Entrar / Cadastrar
                 </button>
-              ) : (
-                <button
-                  className="block w-full text-left px-2 py-1 flex items-center gap-2"
-                  onClick={() => {
-                    setIsOpen(false);
-                    logout();
-                  }}
-                >
-                  <LogOut size={18} className="text-primary" />
-                  Sair
-                </button>
-              )}
+              ) : null}
             </div>
           )}
         </div>
