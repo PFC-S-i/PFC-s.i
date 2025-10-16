@@ -1,15 +1,19 @@
+// app/login/components/login-component.tsx
 "use client";
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button, Input } from "@/components";
 import { PasswordInput } from "@/components/password-input/password-input";
-import { login, getErrorMessage } from "@/services/login.service";
+import { getErrorMessage } from "@/services/login.service"; // só reaproveitamos o parser de erro
+import { useAuth } from "@/context/auth.context";
 
 function LoginComponent() {
   const router = useRouter();
+  const params = useSearchParams();
+  const { signIn } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,11 +31,13 @@ function LoginComponent() {
 
     try {
       setIsLoading(true);
+      await signIn(email.trim(), password); // <- chama o CONTEXTO (atualiza estado na hora)
+      // Se tiver páginas Server Components que dependem de auth por cookie/headers,
+      // você pode descomentar a linha abaixo:
+      // router.refresh();
 
-      await login({ email: email.trim(), password });
-
-      // Redireciona para a home "/" após logar
-      router.push("/");
+      const next = params.get("next") || "/";
+      router.push(next);
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     } finally {
@@ -52,6 +58,7 @@ function LoginComponent() {
           autoComplete="email"
           inputMode="email"
           className="w-full rounded border"
+          disabled={isLoading}
         />
       </div>
 
@@ -64,6 +71,7 @@ function LoginComponent() {
           required
           autoComplete="current-password"
           className="w-full rounded border"
+          disabled={isLoading}
         />
       </div>
 

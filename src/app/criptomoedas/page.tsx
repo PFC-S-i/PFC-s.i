@@ -1,8 +1,13 @@
-// app/criptomoedas/page.tsx
+// ./src/app/criptomoedas/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Star } from "lucide-react";
+import {
+  listFavorites,
+  addFavorite,
+  removeFavorite,
+} from "@/services/favorites.service";
 
 type Market = {
   id: string;
@@ -14,7 +19,7 @@ type Market = {
   market_cap_rank: number | null;
 };
 
-const FAVORITES_KEY = "favorite_coins";
+const TOP_COUNT = 20;
 
 const fmtBRL = (v: number | null) =>
   v == null
@@ -32,26 +37,40 @@ export default function CriptomoedasPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [q, setQ] = useState("");
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
-  // Carrega favoritos do localStorage
+  // favoritos do backend
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [favBusy, setFavBusy] = useState<Set<string>>(new Set());
+
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Carrega favoritos do usuário (se logado)
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(FAVORITES_KEY);
-      if (raw) setFavorites(new Set(JSON.parse(raw) as string[]));
-    } catch {
-      /* ignore */
-    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const set = await listFavorites(); // 401 => retorna Set() (conforme seu service)
+        if (!cancelled) setFavorites(set);
+      } catch {
+        // segue sem favoritos
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Busca dados (proxy local -> CoinGecko)
+  // Carrega Top 20
   useEffect(() => {
+    abortRef.current?.abort();
     const ac = new AbortController();
+    abortRef.current = ac;
 
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/api/markets?per_page=50&page=1`, {
+        setErr(null);
+        const res = await fetch(`/api/markets?vs=brl&count=${TOP_COUNT}`, {
           cache: "no-store",
           signal: ac.signal,
         });
@@ -59,10 +78,9 @@ export default function CriptomoedasPage() {
         const json = (await res.json()) as Market[];
         setData(json);
       } catch (e: unknown) {
-        if ((e as { name?: string })?.name === "AbortError") return;
-        const message =
-          e instanceof Error ? e.message : String(e ?? "Erro desconhecido");
-        setErr(message || "Erro ao carregar dados");
+        if ((e as { name?: string })?.name !== "AbortError") {
+          setErr(e instanceof Error ? e.message : "Erro ao carregar dados");
+        }
       } finally {
         setLoading(false);
       }
@@ -71,19 +89,15 @@ export default function CriptomoedasPage() {
     return () => ac.abort();
   }, []);
 
-  // Salva favoritos
-  useEffect(() => {
-    try {
-      localStorage.setItem(FAVORITES_KEY, JSON.stringify([...favorites]));
-    } catch {
-      /* ignore */
-    }
-  }, [favorites]);
+  // Alterna favorito (otimista, usa backend)
+  async function toggleFav(id: string) {
+    if (favBusy.has(id)) return;
 
-  const toggleFav = (id: string) =>
+    const wasFav = favorites.has(id);
+    setFavBusy((s) => new Set(s).add(id));
     setFavorites((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
+      if (wasFav) {
         next.delete(id);
       } else {
         next.add(id);
@@ -91,16 +105,57 @@ export default function CriptomoedasPage() {
       return next;
     });
 
-  const filtered = useMemo(() => {
+    try {
+      if (wasFav) {
+        await removeFavorite(id);
+      } else {
+        await addFavorite(id);
+      }
+    } catch {
+      // Reverte em caso de erro (ex.: 401)
+      setFavorites((prev) => {
+        const next = new Set(prev);
+        if (wasFav) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
+        return next;
+      });
+    } finally {
+      setFavBusy((s) => {
+        const next = new Set(s);
+        next.delete(id);
+        return next;
+      });
+    }
+  }
+
+  // Busca + ordena (favoritos primeiro, depois rank, depois nome)
+  const visible = useMemo(() => {
     const list = data ?? [];
     const term = q.trim().toLowerCase();
-    if (!term) return list;
-    return list.filter(
-      (c) =>
-        c.name.toLowerCase().includes(term) ||
-        c.symbol.toLowerCase().includes(term)
-    );
-  }, [data, q]);
+
+    const filtered = term
+      ? list.filter(
+          (c) =>
+            c.name.toLowerCase().includes(term) ||
+            c.symbol.toLowerCase().includes(term)
+        )
+      : list;
+
+    return [...filtered].sort((a, b) => {
+      const af = favorites.has(a.id) ? 0 : 1;
+      const bf = favorites.has(b.id) ? 0 : 1;
+      if (af !== bf) return af - bf;
+
+      const ar = a.market_cap_rank ?? Number.POSITIVE_INFINITY;
+      const br = b.market_cap_rank ?? Number.POSITIVE_INFINITY;
+      if (ar !== br) return ar - br;
+
+      return a.name.localeCompare(b.name);
+    });
+  }, [data, q, favorites]);
 
   const content: ReactNode = (() => {
     if (loading) {
@@ -117,7 +172,7 @@ export default function CriptomoedasPage() {
         </div>
       );
     }
-    if (filtered.length === 0) {
+    if (visible.length === 0) {
       return (
         <div className="px-6 py-6 rounded-2xl bg-[#1B1B1B] border border-white/10 opacity-80">
           Nenhum resultado para “{q}”.
@@ -125,7 +180,8 @@ export default function CriptomoedasPage() {
       );
     }
 
-    return filtered.map((c) => {
+    return visible.map((c) => {
+      const isFav = favorites.has(c.id);
       const change = c.price_change_percentage_24h;
       const changeClass =
         change == null
@@ -141,18 +197,9 @@ export default function CriptomoedasPage() {
           key={c.id}
           className="grid grid-cols-[56px_1fr_180px_140px_56px] items-center px-6 py-4 rounded-2xl bg-[#1B1B1B] border border-white/10 hover:border-white/20 transition-colors"
         >
-          {/* rank */}
           <div className="opacity-80">{c.market_cap_rank ?? "—"}</div>
 
-          {/* nome + símbolo */}
           <div className="flex items-center gap-3">
-            {/* <Image
-              src={c.image}
-              alt={c.name}
-              width={24}
-              height={24}
-              className="rounded-full"
-            /> */}
             <div className="flex flex-col">
               <span className="font-medium">{c.name}</span>
               <span className="text-xs opacity-60">
@@ -161,33 +208,27 @@ export default function CriptomoedasPage() {
             </div>
           </div>
 
-          {/* preço */}
           <div className="text-right font-medium">
             {fmtBRL(c.current_price)}
           </div>
 
-          {/* 24h */}
           <div className={`text-right font-medium ${changeClass}`}>
-            {fmtPct(c.price_change_percentage_24h)}
+            {fmtPct(change)}
           </div>
 
-          {/* estrela */}
           <div className="flex justify-end">
             <button
               aria-label={
-                favorites.has(c.id)
-                  ? "Remover dos favoritos"
-                  : "Adicionar aos favoritos"
+                isFav ? "Remover dos favoritos" : "Adicionar aos favoritos"
               }
               onClick={() => toggleFav(c.id)}
-              className="p-2 rounded-xl hover:bg-white/5 active:scale-95"
+              disabled={favBusy.has(c.id)}
+              className="p-2 rounded-xl hover:bg-white/5 active:scale-95 disabled:opacity-60"
               title="Favoritar"
             >
               <Star
-                className={
-                  favorites.has(c.id) ? "text-yellow-400" : "opacity-60"
-                }
-                fill={favorites.has(c.id) ? "currentColor" : "none"}
+                className={isFav ? "text-yellow-400" : "opacity-60"}
+                fill={isFav ? "currentColor" : "none"}
                 strokeWidth={1.5}
               />
             </button>
@@ -212,7 +253,6 @@ export default function CriptomoedasPage() {
       </div>
 
       <div className="grid w-full gap-2">
-        {/* Cabeçalho */}
         <div className="grid grid-cols-[56px_1fr_180px_140px_56px] items-center px-6 py-3 rounded-2xl bg-[#1B1B1B] border border-white/10 text-sm uppercase tracking-wide opacity-70">
           <span>#</span>
           <span>Nome</span>
@@ -221,7 +261,6 @@ export default function CriptomoedasPage() {
           <span className="sr-only">Favorito</span>
         </div>
 
-        {/* Conteúdo */}
         {content}
       </div>
 

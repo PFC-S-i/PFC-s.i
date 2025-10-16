@@ -1,6 +1,7 @@
 import { AuthProvider } from "@/context/auth.context";
 import "./globals.css";
 import Header from "@/components/header/header";
+import { Toaster } from "@/components";
 
 export const metadata = {
   title: "infoCrypto",
@@ -21,6 +22,7 @@ export default function RootLayout({
         <AuthProvider>
           <Header />
           {children}
+          <Toaster />
         </AuthProvider>
       </body>
     </html>

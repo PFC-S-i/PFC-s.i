@@ -1,3 +1,4 @@
+// src/components/header/header.tsx
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -15,12 +16,8 @@ export function Header() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth(); // 👈 pega loading
 
-  // Evita “flash”: só renderiza ações quando sabemos se está logado
-  const isAuthKnown = typeof isAuthenticated === "boolean";
-
-  // Fechar menu ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -31,7 +28,6 @@ export function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fechar menu ao trocar de rota
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
@@ -39,19 +35,18 @@ export function Header() {
   return (
     <header className="pt-5 relative">
       <div className="sm:px-6 flex justify-between items-center">
-        {/* Logo */}
         <div className="flex items-center">
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">
             <Link href="/">infoCrypto</Link>
           </h1>
         </div>
 
-        {/* Links + Ações (desktop) */}
+        {/* Desktop */}
         <div className="hidden md:flex items-center gap-4">
           <NavLinks />
 
           {/* Perfil (autenticado) */}
-          {isAuthKnown && isAuthenticated ? (
+          {!loading && isAuthenticated && (
             <Link
               href="/profile"
               className="flex items-center gap-2 rounded-md border border-white/10 px-3 py-1.5 hover:bg-white/5"
@@ -59,10 +54,10 @@ export function Header() {
               <User size={18} className="text-primary" />
               <span>Perfil</span>
             </Link>
-          ) : null}
+          )}
 
           {/* Entrar / Cadastrar (não autenticado) */}
-          {isAuthKnown && !isAuthenticated ? (
+          {!loading && !isAuthenticated && (
             <Button
               variant="outline"
               className="flex items-center gap-2"
@@ -71,16 +66,15 @@ export function Header() {
               <User size={20} />
               Entrar / Cadastrar
             </Button>
-          ) : null}
+          )}
         </div>
 
-        {/* Hamburger (mobile) */}
+        {/* Mobile */}
         <div className="md:hidden relative" ref={menuRef}>
           <button className="text-primary" onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
 
-          {/* Dropdown mobile */}
           {isOpen && (
             <div className="absolute right-0 mt-2 min-w-max text-foreground bg-background shadow-md rounded-md z-50 p-2 space-y-2 border border-white/10">
               <Link
@@ -90,7 +84,6 @@ export function Header() {
               >
                 Dashboard
               </Link>
-
               <Link
                 href="/educational"
                 className="block px-2 py-1"
@@ -98,7 +91,6 @@ export function Header() {
               >
                 Educacional
               </Link>
-
               <Link
                 href="/news"
                 className="block px-2 py-1"
@@ -107,8 +99,8 @@ export function Header() {
                 Notícias
               </Link>
 
-              {/* 🔹 Perfil (só quando autenticado) */}
-              {isAuthKnown && isAuthenticated ? (
+              {/* Perfil */}
+              {!loading && isAuthenticated && (
                 <Link
                   href="/profile"
                   className="block px-2 py-1"
@@ -119,10 +111,10 @@ export function Header() {
                     <span>Perfil</span>
                   </span>
                 </Link>
-              ) : null}
+              )}
 
-              {/* Entrar / Cadastrar (não autenticado) */}
-              {isAuthKnown && !isAuthenticated ? (
+              {/* Entrar / Cadastrar */}
+              {!loading && !isAuthenticated && (
                 <button
                   className="block w-full text-left px-2 py-1 flex items-center gap-2"
                   onClick={() => {
@@ -133,7 +125,7 @@ export function Header() {
                   <User size={18} className="text-primary" />
                   Entrar / Cadastrar
                 </button>
-              ) : null}
+              )}
             </div>
           )}
         </div>

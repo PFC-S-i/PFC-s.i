@@ -15,6 +15,14 @@
   --font-mono: var(--font-geist-mono);
   --color-primary: var(--primary);
   --color-card: var(--card);
+
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+}
+
+.dark {
+  --color-destructive: #f87171;
+  --color-destructive-foreground: #0b0b0b;
 }
 
 body {
@@ -35,7 +43,6 @@ body {
     transform: translateX(-100%);
   }
 }
-
 .animate-marquee {
   display: inline-block;
   min-width: 100%;

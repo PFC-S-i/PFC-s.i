@@ -10,6 +10,8 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
+
 import {
   login as serviceLogin,
   logout as serviceLogout,
@@ -17,7 +19,6 @@ import {
   getAuthUser,
   type AuthUser,
 } from "@/services/login.service";
-import { useRouter } from "next/navigation";
 
 export type AuthContextType = {
   user: AuthUser | null;
@@ -32,45 +33,55 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Hidrata estado a partir do localStorage
+  // Lê do storage e atualiza o estado (token + user)
   const refresh = useCallback(() => {
-    const token = getAuthToken();
+    const t = getAuthToken();
     const u = getAuthUser();
-    setUser(token ? u ?? null : null);
+    setToken(t);
+    setUser(t ? u ?? null : null);
   }, []);
 
-  // Login centralizado no contexto
-  const signIn = useCallback(async (email: string, password: string) => {
-    const u = await serviceLogin({ email, password }); // salva token/user no storage
-    setUser(u); // garante atualização imediata do contexto
-    // (opcional) router.push("/dashboard");
-  }, []);
+  // Login centralizado: delega ao service, reidrata do storage e notifica
+  const signIn = useCallback(
+    async (email: string, password: string) => {
+      await serviceLogin({ email, password }); // grava token/user no storage
+      refresh(); // garante estado consistente independente do retorno do service
+      window.dispatchEvent(new Event("auth:changed"));
+      // Opcional, se tiver RSC dependente de auth: router.refresh();
+      // Opcional navegação: router.push("/dashboard");
+    },
+    [refresh]
+  );
 
   const logout = useCallback(() => {
-    serviceLogout(); // limpa token e user no storage
+    serviceLogout(); // limpa storage
+    setToken(null);
     setUser(null);
+    window.dispatchEvent(new Event("auth:changed"));
+    // router.refresh(); // opcional, se usar RSC dependente de auth
     router.push("/login");
   }, [router]);
 
   useEffect(() => {
-    // hidrata ao montar
+    // Hidrata ao montar
     refresh();
     setLoading(false);
 
-    // sincroniza quando outra aba alterar o storage
+    // Sincroniza quando outra aba alterar o storage
     const onStorage = (e: StorageEvent) => {
       if (e.key === "auth_token" || e.key === "auth_user") refresh();
     };
 
-    // re-hidrata ao voltar o foco na aba
+    // Re-hidrata ao voltar o foco na aba
     const onVisibility = () => {
       if (document.visibilityState === "visible") refresh();
     };
 
-    // permite seu evento custom continuar funcionando
+    // Evento custom para atualizações na MESMA aba
     const onAuthChanged = () => refresh();
 
     window.addEventListener("storage", onStorage);
@@ -90,17 +101,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextType>(
     () => ({
       user,
-      isAuthenticated: !!user,
+      isAuthenticated: !!token,
       loading,
       signIn,
       refresh,
       logout,
     }),
-    [user, loading, signIn, refresh, logout]
+    [user, token, loading, signIn, refresh, logout]
   );
 
-  // Evita flicker enquanto hidrata o estado inicial
-  if (loading) return null;
+  if (loading) return null; // evita flicker
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
