@@ -11,6 +11,7 @@ const links: NavLink[] = [
   { label: "Educacional", href: "/educational" },
   { label: "Criptomoedas", href: "/criptomoedas" },
   { label: "Notícias", href: "/news" },
+  { label: "Simulador", href: "/carteira" },
 ];
 
 export function NavLinks() {

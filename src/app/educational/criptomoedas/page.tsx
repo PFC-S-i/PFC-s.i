@@ -114,7 +114,7 @@ export default function Page() {
         {/* ---- BOTÃO VOLTAR ---- */}
         <div className="mt-8">
           <Link
-            href="/educacional"
+            href="/educational"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg
                        border border-[#2A2A2A] bg-[#1B1B1B]
                        hover:bg-[#242424] hover:border-[#3A3A3A]

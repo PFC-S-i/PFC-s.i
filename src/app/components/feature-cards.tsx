@@ -6,6 +6,7 @@ import Image, { type StaticImageData } from "next/image";
 import imgEducacional from "../../educacional.webp";
 import imgCriptomoedas from "../../Criptomoedas.jpg";
 import imgNoticias from "../../noticias.jpg";
+import imgSimulador from "../../simulador.jpg";
 
 type Feature = {
   title: string;
@@ -40,6 +41,14 @@ export function FeatureCardsSection() {
       href: "/news",
       image: imgNoticias,
       alt: "Página Notícias",
+    },
+    {
+      title: "Simulador",
+      description:
+        "Teste como seria a criação de uma seed utilizando a entropia.",
+      href: "/carteira",
+      image: imgSimulador,
+      alt: "Página de simulação",
     },
   ];
 
