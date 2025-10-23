@@ -1,9 +1,4 @@
-// src/app/forum/services/forum.service.ts
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-import type { ForumPost } from "@/app/forum/types/forum";
-
-/* ======================== Config ======================== */
+import { ForumPost } from "@/types/forum";
 
 const API = (
   process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
@@ -71,9 +66,6 @@ function q(
   const qs = usp.toString();
   return qs ? `?${qs}` : "";
 }
-
-/* ======================== Tipos API ======================== */
-
 export type Me = {
   id: string;
   name: string | null;
@@ -86,12 +78,12 @@ export type EventItem = {
   title: string;
   description: string;
   coin_id: string | null;
-  starts_at: string; // ISO
-  ends_at: string | null; // ISO
+  starts_at: string;
+  ends_at: string | null;
   likes_count: number;
   dislikes_count: number;
-  created_at: string; // ISO
-  updated_at: string; // ISO
+  created_at: string;
+  updated_at: string;
 };
 
 export type EventsListResponse = {
@@ -114,8 +106,6 @@ export type CoinOption = {
   image?: string | null;
 };
 
-/* ======================== Endpoints ======================== */
-
 export async function getMe(): Promise<Me> {
   return http<Me>("/api/users/me");
 }
@@ -137,11 +127,11 @@ export async function createEvent(input: CreateEventInput): Promise<EventItem> {
 export async function listEvents(params?: {
   q?: string | null;
   coin_id?: string | null;
-  from?: string | null; // ISO
-  to?: string | null; // ISO
+  from?: string | null;
+  to?: string | null;
   page?: number;
   page_size?: number;
-  sort?: string; // ex.: "starts_at:asc"
+  sort?: string;
 }): Promise<EventsListResponse> {
   const query = q({
     q: params?.q ?? null,
@@ -177,17 +167,13 @@ export async function topCoins(per_page = 20): Promise<CoinOption[]> {
   }));
 }
 
-/* ======================== Mapeadores p/ UI ======================== */
-
 export function toForumPost(e: EventItem): ForumPost {
   return {
     id: e.id,
     title: e.title,
     description: e.description,
-    author: "Usuário", // substituído no client se bater com o /api/users/me
+    author: "Usuário",
     createdAt: e.created_at,
-    // Se você adicionou `likes?: number` em ForumPost, pode expor aqui:
-    // likes: e.likes_count,
   } as ForumPost;
 }
 
