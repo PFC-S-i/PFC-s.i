@@ -1,4 +1,3 @@
-// src/components/header/header.tsx
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -7,7 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Menu, X, User } from "lucide-react";
 
 import { Button } from "@/components/button";
-import { NavLinks } from "@/app/components/nav-link";
+import { NavLinks, NAV_LINKS } from "@/app/components/nav-link";
 import { useAuth } from "@/context/auth.context";
 
 export function Header() {
@@ -16,7 +15,7 @@ export function Header() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const { isAuthenticated, loading } = useAuth(); // 👈 pega loading
+  const { isAuthenticated, loading } = useAuth();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -71,52 +70,48 @@ export function Header() {
 
         {/* Mobile */}
         <div className="md:hidden relative" ref={menuRef}>
-          <button className="text-primary" onClick={() => setIsOpen(!isOpen)}>
+          <button
+            className="text-primary"
+            aria-label={isOpen ? "Fechar menu" : "Abrir menu"}
+            onClick={() => setIsOpen(!isOpen)}
+          >
             {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
 
           {isOpen && (
-            <div className="absolute right-0 mt-2 min-w-max text-foreground bg-background shadow-md rounded-md z-50 p-2 space-y-2 border border-white/10">
-              <Link
-                href="/dashboard"
-                className="block px-2 py-1"
-                onClick={() => setIsOpen(false)}
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/educational"
-                className="block px-2 py-1"
-                onClick={() => setIsOpen(false)}
-              >
-                Educacional
-              </Link>
-              <Link
-                href="/news"
-                className="block px-2 py-1"
-                onClick={() => setIsOpen(false)}
-              >
-                Notícias
-              </Link>
+            <div className="absolute right-0 mt-2 min-w-max text-foreground bg-background shadow-md rounded-md z-50 p-2 space-y-1 border border-white/10">
+              {/* mesmos links do desktop */}
+              {NAV_LINKS.map(({ label, href }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="block px-3 py-2 rounded hover:bg-white/5"
+                  onClick={() => setIsOpen(false)}
+                >
+                  {label}
+                </Link>
+              ))}
 
-              {/* Perfil */}
+              <hr className="my-1 border-white/10" />
+
+              {/* Perfil (autenticado) */}
               {!loading && isAuthenticated && (
                 <Link
                   href="/profile"
-                  className="block px-2 py-1"
+                  className="block px-3 py-2 rounded hover:bg-white/5"
                   onClick={() => setIsOpen(false)}
                 >
-                  <span className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-2">
                     <User size={18} className="text-primary" />
                     <span>Perfil</span>
                   </span>
                 </Link>
               )}
 
-              {/* Entrar / Cadastrar */}
+              {/* Entrar / Cadastrar (não autenticado) */}
               {!loading && !isAuthenticated && (
                 <button
-                  className="block w-full text-left px-2 py-1 flex items-center gap-2"
+                  className="block w-full text-left px-3 py-2 rounded hover:bg-white/5 inline-flex items-center gap-2"
                   onClick={() => {
                     setIsOpen(false);
                     router.push("/login");

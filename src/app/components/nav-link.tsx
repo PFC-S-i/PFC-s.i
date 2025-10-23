@@ -2,12 +2,12 @@ import Link from "next/link";
 import { Button } from "@/components/button";
 import { usePathname } from "next/navigation";
 
-interface NavLink {
+export interface NavLink {
   label: string;
   href: string;
 }
 
-const links: NavLink[] = [
+export const NAV_LINKS: NavLink[] = [
   { label: "Educacional", href: "/educational" },
   { label: "Criptomoedas", href: "/criptomoedas" },
   { label: "Notícias", href: "/news" },
@@ -20,10 +20,8 @@ export function NavLinks() {
 
   return (
     <nav className="hidden md:flex space-x-4">
-      {links.map(({ label, href }) => {
-        const isActive =
-          (href === "/news" && pathname === "/news") ||
-          (href.startsWith("/#") && pathname === "/");
+      {NAV_LINKS.map(({ label, href }) => {
+        const isActive = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <Link key={href} href={href}>
             <Button variant="icon" aria-current={isActive ? "page" : undefined}>
