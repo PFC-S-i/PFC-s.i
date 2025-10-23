@@ -1,4 +1,4 @@
-import { ForumPost } from "@/types/forum";
+import type { ForumPost } from "@/types/forum";
 
 const API = (
   process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
@@ -6,7 +6,7 @@ const API = (
 
 function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("auth_token");
+  return window.localStorage.getItem("auth_token");
 }
 
 function buildHeaders(init?: RequestInit): Record<string, string> {
@@ -27,8 +27,17 @@ function buildHeaders(init?: RequestInit): Record<string, string> {
 
   const token = getAuthToken();
   if (token) headers.Authorization = `Bearer ${token}`;
-
   return headers;
+}
+
+type JsonUnknown = unknown;
+
+function extractErrorDetail(payload: unknown): string | null {
+  if (payload && typeof payload === "object") {
+    const maybe = payload as { detail?: unknown };
+    if (typeof maybe.detail === "string") return maybe.detail;
+  }
+  return null;
 }
 
 async function http<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -39,33 +48,28 @@ async function http<T>(path: string, init: RequestInit = {}): Promise<T> {
   });
 
   const text = await res.text();
-  let json: any = null;
-  try {
-    json = text ? JSON.parse(text) : null;
-  } catch {
-    json = null;
-  }
+  const data: JsonUnknown = text ? (JSON.parse(text) as unknown) : null;
 
   if (!res.ok) {
-    const message =
-      (json && typeof json.detail === "string" && json.detail) ||
-      `Request failed: ${res.status} ${res.statusText}`;
+    const detail = extractErrorDetail(data);
+    const message = detail ?? `Request failed: ${res.status} ${res.statusText}`;
     throw new Error(message);
   }
-  return json as T;
+  return data as T;
 }
 
 function q(
   params: Record<string, string | number | boolean | null | undefined>
 ) {
   const usp = new URLSearchParams();
-  Object.entries(params).forEach(([k, v]) => {
-    if (v === null || v === undefined || v === "") return;
+  for (const [k, v] of Object.entries(params)) {
+    if (v === null || v === undefined || v === "") continue;
     usp.set(k, String(v));
-  });
+  }
   const qs = usp.toString();
   return qs ? `?${qs}` : "";
 }
+
 export type Me = {
   id: string;
   name: string | null;
@@ -105,6 +109,40 @@ export type CoinOption = {
   name: string;
   image?: string | null;
 };
+
+/** Estrutura “crua” que pode vir dos endpoints de moedas */
+type RawCoin = {
+  id?: unknown;
+  coin_id?: unknown;
+  symbol?: unknown;
+  name?: unknown;
+  image?: unknown;
+};
+
+function toCoinOptionUnknown(it: unknown): CoinOption {
+  const o = (typeof it === "object" && it !== null ? it : {}) as Record<
+    string,
+    unknown
+  >;
+  const idRaw = o["id"];
+  const coinIdRaw = o["coin_id"];
+  const symbolRaw = o["symbol"];
+  const nameRaw = o["name"];
+  const imageRaw = o["image"];
+
+  const id =
+    typeof idRaw === "string" || typeof idRaw === "number"
+      ? String(idRaw)
+      : typeof coinIdRaw === "string" || typeof coinIdRaw === "number"
+      ? String(coinIdRaw)
+      : "";
+
+  const symbol = typeof symbolRaw === "string" ? symbolRaw.toUpperCase() : "";
+  const name = typeof nameRaw === "string" ? nameRaw : "";
+  const image = typeof imageRaw === "string" ? imageRaw : null;
+
+  return { id, symbol, name, image };
+}
 
 export async function getMe(): Promise<Me> {
   return http<Me>("/api/users/me");
@@ -147,34 +185,26 @@ export async function listEvents(params?: {
 
 export async function searchCoins(query: string): Promise<CoinOption[]> {
   const qs = q({ query });
-  const data = await http<any[]>(`/api/prices/coins/search${qs}`);
-  return (Array.isArray(data) ? data : []).map((it: any) => ({
-    id: String(it.id ?? it.coin_id ?? ""),
-    symbol: String(it.symbol ?? "").toUpperCase(),
-    name: String(it.name ?? ""),
-    image: typeof it.image === "string" ? it.image : null,
-  }));
+  const data = await http<unknown>(`/api/prices/coins/search${qs}`);
+  const items = Array.isArray(data) ? (data as unknown[]) : [];
+  return items.map(toCoinOptionUnknown);
 }
 
 export async function topCoins(per_page = 20): Promise<CoinOption[]> {
   const qs = q({ per_page });
-  const data = await http<any[]>(`/api/prices/markets${qs}`);
-  return (Array.isArray(data) ? data : []).map((it: any) => ({
-    id: String(it.id ?? it.coin_id ?? ""),
-    symbol: String(it.symbol ?? "").toUpperCase(),
-    name: String(it.name ?? ""),
-    image: typeof it.image === "string" ? it.image : null,
-  }));
+  const data = await http<unknown>(`/api/prices/markets${qs}`);
+  const items = Array.isArray(data) ? (data as unknown[]) : [];
+  return items.map(toCoinOptionUnknown);
 }
-
 export function toForumPost(e: EventItem): ForumPost {
-  return {
+  const post: ForumPost = {
     id: e.id,
     title: e.title,
     description: e.description,
     author: "Usuário",
     createdAt: e.created_at,
-  } as ForumPost;
+  };
+  return post;
 }
 
 export function toForumPosts(res: EventsListResponse): ForumPost[] {
