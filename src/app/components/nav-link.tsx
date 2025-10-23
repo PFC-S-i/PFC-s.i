@@ -12,6 +12,7 @@ const links: NavLink[] = [
   { label: "Criptomoedas", href: "/criptomoedas" },
   { label: "Notícias", href: "/news" },
   { label: "Simulador", href: "/carteira" },
+  { label: "Fórum", href: "/forum" },
 ];
 
 export function NavLinks() {
