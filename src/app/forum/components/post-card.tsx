@@ -12,7 +12,7 @@ type Props = {
 };
 
 export function PostCard({ post, initialLikes = 0 }: Props) {
-  const likes = post.likes ?? initialLikes;
+  // const likes = post.likes ?? initialLikes;
 
   return (
     <article className="rounded-2xl border border-white/10 bg-[#1B1B1B] p-5">
@@ -36,10 +36,10 @@ export function PostCard({ post, initialLikes = 0 }: Props) {
           disabled
           className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs opacity-75"
           title="Curtidas (em breve você poderá curtir)"
-          aria-label={`Curtidas: ${likes}`}
+          // aria-label={`Curtidas: ${likes}`}
         >
           <ThumbsUp className="h-4 w-4" />
-          <span className="tabular-nums">{likes}</span>
+          {/* <span className="tabular-nums">{likes}</span> */}
         </Button>
       </div>
 
