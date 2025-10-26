@@ -3,32 +3,28 @@
 import { useEffect, useState } from "react";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/button";
-import { fetchMe } from "@/services/user.service";
+import { fetchMe, updateMe } from "@/services/user.service";
 import { getAuthToken } from "@/services/login.service";
 import { useAuth } from "@/context/auth.context";
-import { EMAIL_RE, getErrMsg, sleep } from "./lib/utils";
+import { getErrMsg } from "./lib/utils";
 import AccountCard from "./sections/account-card";
 import FavoritesDemo from "./sections/favorites-demo";
 import PasswordCard from "./sections/password-card";
 import { CARD } from "./lib/ui";
 
 export default function ProfileView() {
-  // valores atuais (editáveis) + cópia original pra cancelar
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [origName, setOrigName] = useState("");
   const [origEmail, setOrigEmail] = useState("");
 
-  // estados da página
   const [profileLoading, setProfileLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  // feedbacks
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saveLoading, setSaveLoading] = useState(false);
 
-  // alterar senha
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -38,7 +34,6 @@ export default function ProfileView() {
 
   const { logout } = useAuth();
 
-  // Carrega perfil se houver token
   useEffect(() => {
     const token = getAuthToken?.();
     if (!token) return;
@@ -61,7 +56,6 @@ export default function ProfileView() {
 
   function toggleEdit() {
     if (isEditing) {
-      // cancelar -> volta aos originais
       setName(origName);
       setEmail(origEmail);
       setSuccess(null);
@@ -80,46 +74,21 @@ export default function ProfileView() {
       setSuccess(null);
       setError(null);
 
-      if (!email || !EMAIL_RE.test(email))
-        throw new Error("Informe um e-mail válido.");
+      const updated = await updateMe({ name: name.trim() });
 
-      // TODO: quando existir: PATCH /api/users/me
-      await sleep(600); // DEMO
+      const n = updated.name ?? "";
+      const e = updated.email ?? "";
+      setName(n);
+      setEmail(e);
+      setOrigName(n);
+      setOrigEmail(e);
 
-      // congela como originais e volta p/ leitura
-      setOrigName(name);
-      setOrigEmail(email);
       setIsEditing(false);
-      setSuccess("Informações atualizadas (DEMO).");
+      setSuccess("Informações atualizadas.");
     } catch (e) {
-      setError(getErrMsg(e) || "Não foi possível salvar (DEMO).");
+      setError(getErrMsg(e) || "Não foi possível salvar.");
     } finally {
       setSaveLoading(false);
-    }
-  }
-
-  async function changePassword() {
-    try {
-      setPwdLoading(true);
-      setPwdSuccess(null);
-      setPwdError(null);
-
-      if (!currentPassword || !newPassword)
-        throw new Error("Preencha a senha atual e a nova senha.");
-      if (newPassword.length < 8)
-        throw new Error("A nova senha deve ter pelo menos 8 caracteres.");
-      if (newPassword !== confirmPassword)
-        throw new Error("A confirmação não coincide com a nova senha.");
-
-      await sleep(600); // DEMO
-      setPwdSuccess("Senha alterada (DEMO).");
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch (e) {
-      setPwdError(getErrMsg(e) || "Não foi possível alterar (DEMO).");
-    } finally {
-      setPwdLoading(false);
     }
   }
 
@@ -153,7 +122,7 @@ export default function ProfileView() {
         loading={pwdLoading}
         error={pwdError}
         success={pwdSuccess}
-        onSubmit={changePassword}
+        onSubmit={() => {}}
       />
 
       <div className={`${CARD} mt-8 p-6`}>

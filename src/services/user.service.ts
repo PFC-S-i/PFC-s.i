@@ -22,13 +22,38 @@ export async function fetchMe(): Promise<MeResponse> {
   });
 
   if (!res.ok) {
-    // Tenta extrair uma mensagem útil
     try {
       const data = await res.json();
       throw new Error(getErrorMessage(data));
     } catch {
       const txt = await res.text();
       throw new Error(txt || `Erro ${res.status} ao carregar o perfil.`);
+    }
+  }
+
+  return (await res.json()) as MeResponse;
+}
+
+export type UpdateMeRequest = { name: string };
+
+export async function updateMe(body: UpdateMeRequest): Promise<MeResponse> {
+  const res = await fetch(`${API_URL}/api/users/me`, {
+    method: "PATCH",
+    headers: {
+      accept: "application/json",
+      "Content-Type": "application/json",
+      ...authHeaders(),
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    try {
+      const data = await res.json();
+      throw new Error(getErrorMessage(data));
+    } catch {
+      const txt = await res.text();
+      throw new Error(txt || `Erro ${res.status} ao atualizar o perfil.`);
     }
   }
 

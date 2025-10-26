@@ -1,4 +1,5 @@
 // src/services/favorites.service.ts
+
 export type FavoriteDTO = {
   id: string;
   coin_id: string;
@@ -6,89 +7,124 @@ export type FavoriteDTO = {
   created_at: string;
 };
 
-const RAW_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "";
-const BASE = RAW_BASE.replace(/\/+$/, ""); // remove "/" no final
+// mesma base usada no login
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") ||
+  "http://localhost:8000";
 
-function buildUrl(path: string) {
-  const p = path.startsWith("/") ? path : `/${path}`;
-  // evita "/api/api/..."
-  if (BASE && BASE.endsWith("/api") && p.startsWith("/api/")) {
-    return `${BASE}${p.replace(/^\/api/, "")}`;
-  }
-  return `${BASE}${p}`;
+// pega token salvo no login
+function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("auth_token");
 }
 
-const baseInit: RequestInit = {
-  credentials: "include", // envia cookies (se usar sessão via cookie)
-  headers: { Accept: "application/json" },
-};
+// monta headers com Authorization se tiver token
+function authHeaders(extra?: HeadersInit): HeadersInit {
+  const token = getToken();
+  const base: Record<string, string> = {
+    Accept: "application/json",
+  };
+  if (token) {
+    base.Authorization = `Bearer ${token}`;
+  }
 
-function withAuth(init: RequestInit = {}): RequestInit {
-  const headers = new Headers(baseInit.headers);
-  if (init.headers) {
-    new Headers(init.headers).forEach((v, k) => headers.set(k, v));
+  if (extra) {
+    const h = new Headers(extra);
+    h.forEach((v, k) => {
+      base[k] = v;
+    });
   }
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("auth_token");
-    if (token) headers.set("Authorization", `Bearer ${token}`);
-  }
-  return { ...baseInit, ...init, headers };
+
+  return base;
 }
 
+// helper pra erro mais claro
 async function assertOk(res: Response, ctx: string) {
   if (res.ok) return res;
-  const txt = await res.text().catch(() => "");
-  throw new Error(`${ctx} ${res.status}${txt ? ` – ${txt}` : ""}`);
-}
 
-// src/services/favorites.service.ts
-
-export async function listFavorites(): Promise<Set<string>> {
-  const endpoint = buildUrl("/api/favorites");
-
-  // 🔧 use withAuth para incluir Authorization + cookies
-  const res = await fetch(
-    endpoint,
-    withAuth({ method: "GET", cache: "no-store" })
-  );
-
-  if (res.status === 401) {
-    // se preferir, lance erro para o componente exibir "faça login"
-    // throw new Error("Não autenticado");
-    return new Set(); // ou mantenha esse comportamento
+  let detail = "";
+  try {
+    const data = await res.json();
+    if (typeof data?.detail === "string") detail = data.detail;
+    else if (Array.isArray(data?.detail) && data.detail[0]?.msg)
+      detail = String(data.detail[0].msg);
+  } catch {
+    const txt = await res.text();
+    if (txt) detail = txt;
   }
 
-  await assertOk(res, `GET ${endpoint}`);
+  const suffix = detail ? ` – ${detail}` : "";
+  throw new Error(`${ctx} ${res.status}${suffix}`);
+}
+
+/**
+ * GET /api/favorites
+ * retorna Set<coin_id>
+ */
+export async function listFavorites(): Promise<Set<string>> {
+  const res = await fetch(`${API_URL}/api/favorites`, {
+    method: "GET",
+    headers: authHeaders(),
+    cache: "no-store",
+  });
+
+  if (res.status === 401) {
+    // usuário sem login => sem favoritos
+    return new Set();
+  }
+
+  await assertOk(res, "GET /api/favorites");
+
   const items = (await res.json()) as FavoriteDTO[];
   return new Set(items.map((f) => f.coin_id));
 }
 
+/**
+ * POST /api/favorites { coin_id }
+ */
 export async function addFavorite(
   coin_id: string
 ): Promise<FavoriteDTO | null> {
-  const endpoint = buildUrl("/api/favorites");
-  const res = await fetch(
-    endpoint,
-    withAuth({
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ coin_id }),
-    })
-  );
+  const res = await fetch(`${API_URL}/api/favorites`, {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ coin_id }),
+  });
 
-  if (res.status === 401) throw new Error("Não autenticado");
-  if (res.status === 409) return null; // já favoritado
-  await assertOk(res, `POST ${endpoint}`);
+  if (res.status === 401) {
+    throw new Error("Não autenticado");
+  }
 
-  return (await res.json()) as FavoriteDTO;
+  if (res.status === 409) {
+    // já existe
+    return null;
+  }
+
+  await assertOk(res, "POST /api/favorites");
+
+  const item = (await res.json()) as FavoriteDTO;
+  return item;
 }
 
+/**
+ * DELETE /api/favorites/{coin_id}
+ */
 export async function removeFavorite(coin_id: string): Promise<void> {
-  const endpoint = buildUrl(`/api/favorites/${encodeURIComponent(coin_id)}`);
-  const res = await fetch(endpoint, withAuth({ method: "DELETE" }));
+  const res = await fetch(
+    `${API_URL}/api/favorites/${encodeURIComponent(coin_id)}`,
+    {
+      method: "DELETE",
+      headers: authHeaders(),
+    }
+  );
 
-  if (res.status === 401) throw new Error("Não autenticado");
-  if (res.status === 204) return;
-  await assertOk(res, `DELETE ${endpoint}`);
+  if (res.status === 401) {
+    throw new Error("Não autenticado");
+  }
+
+  if (res.status === 204) {
+    return;
+  }
+
+  await assertOk(res, "DELETE /api/favorites/:coin_id");
 }

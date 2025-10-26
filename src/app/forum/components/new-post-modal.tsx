@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,24 +24,34 @@ import {
 const formSchema = postSchema.extend({
   coin_id: z.string().min(1, "Selecione uma moeda."),
 });
-
 type NewPostForm = z.infer<typeof formSchema>;
 
 type Props = {
   open: boolean;
   onClose: () => void;
+  /** Chamado no submit (tanto criar quanto editar) */
   onConfirm: (data: {
     title: string;
     description: string;
     coin_id: string;
   }) => void;
+  /** Novo: modo do modal */
+  mode?: "create" | "edit";
+  /** Novo: dados iniciais quando editar */
+  initialData?: Partial<Pick<NewPostForm, "title" | "description" | "coin_id">>;
 };
 
 const TITLE_MAX = 120;
 const DESC_MAX = 5000;
 const DEFAULT_VALUES: NewPostForm = { title: "", description: "", coin_id: "" };
 
-export function NewPostModal({ open, onClose, onConfirm }: Props) {
+export function NewPostModal({
+  open,
+  onClose,
+  onConfirm,
+  mode = "create",
+  initialData,
+}: Props) {
   const {
     register,
     handleSubmit,
@@ -54,6 +64,13 @@ export function NewPostModal({ open, onClose, onConfirm }: Props) {
     mode: "onChange",
     defaultValues: DEFAULT_VALUES,
   });
+
+  // 🔁 sempre que abrir no modo edição, injeta initialData
+  useEffect(() => {
+    if (open) {
+      reset({ ...DEFAULT_VALUES, ...initialData });
+    }
+  }, [open, initialData, reset]);
 
   const { ref: titleFieldRef, ...titleReg } = register("title");
   const descReg = register("description");
@@ -131,6 +148,11 @@ export function NewPostModal({ open, onClose, onConfirm }: Props) {
 
   if (!open) return null;
 
+  const titleLabel =
+    mode === "edit" ? "Editar notícia" : "Publicar uma notícia";
+  const submitLabel = mode === "edit" ? "Salvar" : "Publicar";
+  const SubmitIcon = mode === "edit" ? Pencil : Plus;
+
   return (
     <>
       <div
@@ -155,7 +177,7 @@ export function NewPostModal({ open, onClose, onConfirm }: Props) {
                 id="new-post-title"
                 className="text-lg md:text-xl font-semibold"
               >
-                Publicar uma notícia
+                {titleLabel}
               </h2>
               {loadingCoins && (
                 <p className="text-xs opacity-70 mt-1">Carregando moedas…</p>
@@ -226,9 +248,7 @@ export function NewPostModal({ open, onClose, onConfirm }: Props) {
                     sideOffset={6}
                     className={classNames(
                       "max-h-64 overflow-y-auto",
-
                       "bg-[#1B1B1B] text-foreground border border-white/10 shadow-xl rounded-xl",
-
                       "z-[60]"
                     )}
                   >
@@ -251,10 +271,10 @@ export function NewPostModal({ open, onClose, onConfirm }: Props) {
                 </Select>
               )}
             />
-
             <p className="mt-1 text-xs text-red-400 min-h-[1.25rem]">
               {errors.coin_id?.message || "\u00A0"}
             </p>
+
             {/* Descrição */}
             <label
               className="block text-sm font-medium mt-4 mb-1"
@@ -270,7 +290,7 @@ export function NewPostModal({ open, onClose, onConfirm }: Props) {
               className={classNames(
                 "w-full rounded-xl bg-[#121212] border px-3 py-2 outline-none resize-y",
                 "placeholder:opacity-50",
-                errors.description ? "border-red-500/60" : "border-white/10  "
+                errors.description ? "border-red-500/60" : "border-white/10"
               )}
               maxLength={DESC_MAX}
             />
@@ -298,11 +318,11 @@ export function NewPostModal({ open, onClose, onConfirm }: Props) {
                 disabled={!isValid || isSubmitting}
                 className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-medium disabled:opacity-60 disabled:cursor-not-allowed"
                 title={
-                  !isValid ? "Preencha os campos obrigatórios" : "Publicar"
+                  !isValid ? "Preencha os campos obrigatórios" : submitLabel
                 }
               >
-                <Plus className="h-4 w-4" />
-                Publicar
+                <SubmitIcon className="h-4 w-4" />
+                {submitLabel}
               </Button>
             </div>
           </form>

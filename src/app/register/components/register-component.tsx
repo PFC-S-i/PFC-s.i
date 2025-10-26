@@ -65,10 +65,6 @@ export function RegisterComponent() {
       setError("As senhas não coincidem.");
       return;
     }
-    if (password.length < 6) {
-      setError("A senha deve ter pelo menos 6 caracteres.");
-      return;
-    }
 
     try {
       setIsLoading(true);

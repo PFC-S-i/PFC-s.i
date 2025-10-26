@@ -33,7 +33,8 @@ export default function AccountCard(props: Props) {
     onSave,
   } = props;
 
-  const inputsDisabled = loading || !isEditing;
+  // só o nome habilita quando estiver editando
+  const nameDisabled = loading || !isEditing;
 
   return (
     <section className={`${CARD} p-6 mb-8`}>
@@ -81,8 +82,10 @@ export default function AccountCard(props: Props) {
           value={name}
           onChange={onChangeName}
           placeholder={loading ? "Carregando..." : ""}
-          disabled={inputsDisabled}
+          disabled={nameDisabled}
         />
+
+        {/* E-mail sempre somente leitura (desabilitado) */}
         <LabeledInput
           id="email"
           label="E-mail"
@@ -90,7 +93,7 @@ export default function AccountCard(props: Props) {
           value={email}
           onChange={onChangeEmail}
           placeholder={loading ? "Carregando..." : ""}
-          disabled={inputsDisabled}
+          disabled
         />
       </div>
 
@@ -102,7 +105,7 @@ export default function AccountCard(props: Props) {
           disabled={saveLoading || loading || !isEditing}
           aria-disabled={saveLoading || loading || !isEditing}
           title={
-            !isEditing ? "Clique em Editar para alterar os dados" : undefined
+            !isEditing ? "Clique em Editar para alterar o nome" : undefined
           }
         >
           {saveLoading ? "Salvando..." : "Salvar alterações"}

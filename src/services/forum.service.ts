@@ -1,212 +1,205 @@
+// src/services/forum.service.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ForumPost } from "@/types/forum";
 
+/** =========================
+ *  HTTP base + helpers
+ *  =======================*/
 const API = (
   process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
 ).replace(/\/+$/, "");
 
 function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
-  return window.localStorage.getItem("auth_token");
+  return localStorage.getItem("auth_token");
 }
 
-function buildHeaders(init?: RequestInit): Record<string, string> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
+function buildHeaders(init?: RequestInit): HeadersInit {
+  const base: Record<string, string> = { "Content-Type": "application/json" };
 
   if (init?.headers) {
     const h = init.headers as HeadersInit;
-    if (h instanceof Headers) {
-      h.forEach((v, k) => (headers[k] = String(v)));
-    } else if (Array.isArray(h)) {
-      for (const [k, v] of h) headers[k] = String(v);
-    } else {
-      Object.assign(headers, h as Record<string, string>);
-    }
+    if (h instanceof Headers) h.forEach((v, k) => (base[k] = String(v)));
+    else if (Array.isArray(h)) for (const [k, v] of h) base[k] = String(v);
+    else if (typeof h === "object" && h)
+      Object.assign(base, h as Record<string, string>);
   }
 
   const token = getAuthToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
-  return headers;
+  if (token) base.Authorization = `Bearer ${token}`;
+  return base;
 }
 
-type JsonUnknown = unknown;
+async function http<T = unknown>(
+  path: string,
+  init: RequestInit = {}
+): Promise<T> {
+  const url = path.startsWith("http") ? path : `${API}${path}`;
+  const res = await fetch(url, { ...init, headers: buildHeaders(init) });
 
-function extractErrorDetail(payload: unknown): string | null {
-  if (payload && typeof payload === "object") {
-    const maybe = payload as { detail?: unknown };
-    if (typeof maybe.detail === "string") return maybe.detail;
-  }
-  return null;
-}
-
-async function http<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API}${path}`, {
-    ...init,
-    headers: buildHeaders(init),
-    credentials: "include",
-  });
-
-  const text = await res.text();
-  const data: JsonUnknown = text ? (JSON.parse(text) as unknown) : null;
+  const raw = await res.text();
+  const maybeJSON = raw ? safeParseJSON(raw) : null;
 
   if (!res.ok) {
-    const detail = extractErrorDetail(data);
-    const message = detail ?? `Request failed: ${res.status} ${res.statusText}`;
-    throw new Error(message);
+    let msg = `HTTP ${res.status}`;
+    if (maybeJSON && typeof maybeJSON === "object") {
+      const d = (maybeJSON as any).detail;
+      if (Array.isArray(d)) msg = d[0]?.msg ?? msg;
+      else if (typeof d === "string") msg = d;
+    } else if (typeof raw === "string" && raw.trim().length) {
+      msg = raw;
+    }
+    throw new Error(msg);
   }
-  return data as T;
+
+  if (!raw) return undefined as unknown as T; // 204 / sem corpo
+  return maybeJSON as T;
 }
 
-function q(
-  params: Record<string, string | number | boolean | null | undefined>
-) {
-  const usp = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) {
-    if (v === null || v === undefined || v === "") continue;
-    usp.set(k, String(v));
+function safeParseJSON(text: string) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
   }
-  const qs = usp.toString();
-  return qs ? `?${qs}` : "";
 }
 
-export type Me = {
-  id: string;
-  name: string | null;
-  email: string;
+/** =========================
+ *  Tipos do domínio
+ *  =======================*/
+export type Me = { id: string; email: string; name?: string | null };
+
+export type VoteResponse = {
+  event_id: string;
+  value: -1 | 0 | 1;
+  likes_count: number;
+  dislikes_count: number;
 };
 
-export type EventItem = {
+export type ApiEvent = {
   id: string;
   user_id: string;
+  user_name?: string | null;
   title: string;
   description: string;
   coin_id: string | null;
-  starts_at: string;
-  ends_at: string | null;
-  likes_count: number;
-  dislikes_count: number;
-  created_at: string;
-  updated_at: string;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  created_at: string; // ISO
+  updated_at?: string | null;
+  likes_count?: number;
+  dislikes_count?: number;
 };
 
 export type EventsListResponse = {
-  items: EventItem[];
-  meta: { page: number; page_size: number; total: number };
+  items: ApiEvent[];
+  // o back retorna "meta", mas mantemos "count" opcional p/ compat:
+  meta?: { page: number; page_size: number; total: number };
+  count?: number;
 };
 
 export type CreateEventInput = {
   title: string;
   description: string;
   coin_id: string;
-  starts_at?: string; // default = now
-  ends_at?: string | null;
+  starts_at?: string;
+  ends_at?: string;
 };
 
-export type CoinOption = {
-  id: string;
-  symbol: string;
-  name: string;
-  image?: string | null;
-};
+export type UpdateEventInput = CreateEventInput;
 
-/** Estrutura “crua” que pode vir dos endpoints de moedas */
-type RawCoin = {
-  id?: unknown;
-  coin_id?: unknown;
-  symbol?: unknown;
-  name?: unknown;
-  image?: unknown;
-};
+export type CoinOption = { id: string; name: string; symbol: string };
+type ApiList<T> = { items: T[]; count?: number };
+type MarketLite = { id: string; name: string; symbol: string };
 
-function toCoinOptionUnknown(it: unknown): CoinOption {
-  const o = (typeof it === "object" && it !== null ? it : {}) as Record<
-    string,
-    unknown
-  >;
-  const idRaw = o["id"];
-  const coinIdRaw = o["coin_id"];
-  const symbolRaw = o["symbol"];
-  const nameRaw = o["name"];
-  const imageRaw = o["image"];
-
-  const id =
-    typeof idRaw === "string" || typeof idRaw === "number"
-      ? String(idRaw)
-      : typeof coinIdRaw === "string" || typeof coinIdRaw === "number"
-      ? String(coinIdRaw)
-      : "";
-
-  const symbol = typeof symbolRaw === "string" ? symbolRaw.toUpperCase() : "";
-  const name = typeof nameRaw === "string" ? nameRaw : "";
-  const image = typeof imageRaw === "string" ? imageRaw : null;
-
-  return { id, symbol, name, image };
-}
-
-export async function getMe(): Promise<Me> {
-  return http<Me>("/api/users/me");
-}
-
-export async function createEvent(input: CreateEventInput): Promise<EventItem> {
-  const payload = {
-    title: input.title.trim(),
-    description: input.description.trim(),
-    coin_id: input.coin_id,
-    starts_at: input.starts_at ?? new Date().toISOString(),
-    ends_at: input.ends_at ?? null,
-  };
-  return http<EventItem>("/api/events", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function listEvents(params?: {
-  q?: string | null;
-  coin_id?: string | null;
-  from?: string | null;
-  to?: string | null;
-  page?: number;
-  page_size?: number;
-  sort?: string;
-}): Promise<EventsListResponse> {
-  const query = q({
-    q: params?.q ?? null,
-    coin_id: params?.coin_id ?? null,
-    from: params?.from ?? null,
-    to: params?.to ?? null,
-    page: params?.page ?? 1,
-    page_size: params?.page_size ?? 20,
-    sort: params?.sort ?? "starts_at:asc",
-  });
-  return http<EventsListResponse>(`/api/events${query}`);
-}
-
-export async function searchCoins(query: string): Promise<CoinOption[]> {
-  const qs = q({ query });
-  const data = await http<unknown>(`/api/prices/coins/search${qs}`);
-  const items = Array.isArray(data) ? (data as unknown[]) : [];
-  return items.map(toCoinOptionUnknown);
-}
-
-export async function topCoins(per_page = 20): Promise<CoinOption[]> {
-  const qs = q({ per_page });
-  const data = await http<unknown>(`/api/prices/markets${qs}`);
-  const items = Array.isArray(data) ? (data as unknown[]) : [];
-  return items.map(toCoinOptionUnknown);
-}
-export function toForumPost(e: EventItem): ForumPost {
-  const post: ForumPost = {
+/** Mapeia o EventOut do back para o ForumPost (modelo usado no front) */
+export function toForumPost(e: ApiEvent): ForumPost {
+  return {
     id: e.id,
     title: e.title,
-    description: e.description,
-    author: "Usuário",
-    createdAt: e.created_at,
+    description: e.description ?? "",
+    author: e.user_name?.trim?.() || "Usuário",
+    createdAt: e.created_at ?? new Date().toISOString(),
+    likes: typeof e.likes_count === "number" ? e.likes_count : 0,
+    dislikes: typeof e.dislikes_count === "number" ? e.dislikes_count : 0,
   };
-  return post;
 }
 
-export function toForumPosts(res: EventsListResponse): ForumPost[] {
-  return res.items.map(toForumPost);
+/** =========================
+ *  Services (API)
+ *  =======================*/
+
+export async function getMe(): Promise<Me> {
+  return http<Me>("/api/users/me", { method: "GET" });
+}
+
+export async function listEvents(
+  params: {
+    q?: string | null;
+    coin_id?: string | null;
+    from?: string | null;
+    to?: string | null;
+    page?: number;
+    page_size?: number;
+    sort?: string;
+  } = {}
+): Promise<EventsListResponse> {
+  const q = new URLSearchParams();
+  if (params.q) q.set("q", params.q);
+  if (params.coin_id) q.set("coin_id", params.coin_id);
+  if (params.from) q.set("from", params.from);
+  if (params.to) q.set("to", params.to);
+  if (params.page) q.set("page", String(params.page));
+  if (params.page_size) q.set("page_size", String(params.page_size));
+  if (params.sort) q.set("sort", params.sort);
+  const qs = q.toString() ? `?${q.toString()}` : "";
+  return http<EventsListResponse>(`/api/events${qs}`, { method: "GET" });
+}
+
+export async function getEvent(id: string): Promise<ApiEvent> {
+  return http<ApiEvent>(`/api/events/${id}`, { method: "GET" });
+}
+
+export async function createEvent(input: CreateEventInput): Promise<ApiEvent> {
+  return http<ApiEvent>("/api/events", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateEvent(
+  id: string,
+  input: UpdateEventInput
+): Promise<ApiEvent> {
+  return http<ApiEvent>(`/api/events/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteEvent(id: string): Promise<void> {
+  await http<void>(`/api/events/${id}`, { method: "DELETE" });
+}
+
+/** ========= Likes / Dislikes (rotas oficiais do seu back) ========= */
+export async function likeEvent(id: string): Promise<VoteResponse> {
+  return http<VoteResponse>(`/api/events/${id}/like`, { method: "POST" });
+}
+export async function dislikeEvent(id: string): Promise<VoteResponse> {
+  return http<VoteResponse>(`/api/events/${id}/dislike`, { method: "POST" });
+}
+
+/** =========================
+ *  Outros
+ *  =======================*/
+export async function topCoins(limit = 20): Promise<CoinOption[]> {
+  const res = await http<ApiList<MarketLite>>(
+    `/api/prices/top?limit=${encodeURIComponent(String(limit))}`,
+    { method: "GET" }
+  );
+  return (res.items || []).map((m) => ({
+    id: m.id,
+    name: m.name,
+    symbol: (m.symbol || "").toUpperCase(),
+  }));
 }
