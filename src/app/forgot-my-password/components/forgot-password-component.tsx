@@ -4,11 +4,19 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input } from "@/components";
 import { requestPasswordReset } from "@/services/password.service";
-// import { useToast } from "@/hooks"; // se você tiver toasts
+import { useToast } from "@/hooks";
+
+function toMessage(err: unknown) {
+  return err instanceof Error
+    ? err.message
+    : typeof err === "string"
+    ? err
+    : "Tente novamente.";
+}
 
 function ForgotPasswordComponent() {
   const router = useRouter();
-  // const { toast } = useToast(); // se você tiver toasts
+  const { toast } = useToast();
 
   const [email, setEmail] = useState("");
   const [touched, setTouched] = useState(false);
@@ -21,7 +29,7 @@ function ForgotPasswordComponent() {
   const emailIsValid = emailValidNow || !touched;
 
   useEffect(() => {
-    return () => abortRef.current?.abort(); // cleanup ao desmontar
+    return () => abortRef.current?.abort();
   }, []);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
@@ -36,15 +44,18 @@ function ForgotPasswordComponent() {
 
     try {
       await requestPasswordReset(email, ctrl.signal);
-
-      // Se chegou aqui, consideramos "sucesso" (sem vazar enumeração de e-mails)
       setSubmitted(true);
-
-      // Se quiser toast:
-      // toast({ title: "Verifique seu e-mail", description: "Se existir uma conta, enviaremos o link de redefinição." });
-    } catch (err: any) {
-      // Em erro de rede/servidor, mantemos o formulário para nova tentativa
-      // toast?.({ title: "Falha ao enviar", description: err?.message ?? "Tente novamente.", variant: "destructive" });
+      toast({
+        title: "Verifique seu e-mail",
+        description: "Se existir uma conta, enviaremos o link de redefinição.",
+      });
+    } catch (err: unknown) {
+      const msg = toMessage(err);
+      toast({
+        title: "Falha ao enviar",
+        description: msg,
+        variant: "destructive",
+      });
       console.error(err);
     } finally {
       setLoading(false);

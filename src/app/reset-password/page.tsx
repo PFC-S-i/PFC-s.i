@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button, Input } from "@/components";
 import { resetPassword } from "@/services/password.service";
@@ -54,11 +54,17 @@ export default function ResetPasswordPage() {
         title: "Senha redefinida",
         description: "Faça login com sua nova senha.",
       });
-    } catch (err: any) {
-      setError(err?.message || "Falha ao redefinir a senha.");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === "string"
+          ? err
+          : "Falha ao redefinir a senha.";
+      setError(message);
       toast?.({
         title: "Erro",
-        description: err?.message,
+        description: message,
         variant: "destructive",
       });
     } finally {
