@@ -3,10 +3,11 @@
 import Link from "next/link";
 import Image, { type StaticImageData } from "next/image";
 
-import imgEducacional from "../../educacional.webp";
+import imgEducacional from "../../educacional.jpeg";
 import imgCriptomoedas from "../../Criptomoedas.jpg";
 import imgNoticias from "../../noticias.jpg";
 import imgSimulador from "../../simulador.jpg";
+import imgForum from "../../forum.jpg";
 
 type Feature = {
   title: string;
@@ -49,6 +50,14 @@ export function FeatureCardsSection() {
       href: "/carteira",
       image: imgSimulador,
       alt: "Página de simulação",
+    },
+    {
+      title: "Fórum",
+      description:
+        "Interaja com outros usuários e adicione eventos relevantes para o mundo cripto.",
+      href: "/forum",
+      image: imgForum,
+      alt: "Fórum",
     },
   ];
 
