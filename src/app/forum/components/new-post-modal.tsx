@@ -5,10 +5,11 @@ import { Plus, Pencil } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { classifyEventLocalAPI } from "@/services/ai.service";
 
 import { useCharCounter } from "@/app/forum/hooks/useCharCounter";
 import { classNames } from "@/app/forum/lib/utils";
-import { type CoinOption, topCoins } from "@/services/forum.service";
+import { type CoinOption, topCoins } from "@/services/prices.service";
 import { postSchema } from "@/app/schemas/post.schema";
 import { Button } from "@/components";
 import {
@@ -29,12 +30,14 @@ type NewPostForm = z.infer<typeof formSchema>;
 type Props = {
   open: boolean;
   onClose: () => void;
-  /** Chamado no submit (tanto criar quanto editar) */
+  /** Chamado no submit (tanto criar quanto editar)
+   * Pode devolver void OU o objeto criado (com id) OU uma Promise de ambos.
+   */
   onConfirm: (data: {
     title: string;
     description: string;
     coin_id: string;
-  }) => void;
+  }) => void | { id?: string } | Promise<void | { id?: string }>;
   /** Novo: modo do modal */
   mode?: "create" | "edit";
   /** Novo: dados iniciais quando editar */
@@ -94,14 +97,61 @@ export function NewPostModal({
     onClose();
   }, [onClose, reset]);
 
+  // ✅ NOVO FLUXO: cria primeiro, classifica depois (não bloqueia UI)
   const onValid = useCallback(
-    (data: NewPostForm) => {
-      onConfirm({
-        title: data.title.trim(),
-        description: data.description.trim(),
-        coin_id: data.coin_id,
-      });
+    async (data: NewPostForm) => {
+      // 1) Cria/edita normalmente
+      const maybe = await Promise.resolve(
+        onConfirm({
+          title: data.title.trim(),
+          description: data.description.trim(),
+          coin_id: data.coin_id,
+        })
+      );
+
+      // tenta capturar o id retornado (se o pai devolver)
+      let createdId: string | null = null;
+      if (
+        maybe &&
+        typeof maybe === "object" &&
+        "id" in (maybe as any) &&
+        typeof (maybe as any).id === "string"
+      ) {
+        createdId = (maybe as any).id;
+      }
+
+      // fecha o modal imediatamente
       handleClose();
+
+      // 2) Classifica em background (sem travar a tela)
+      try {
+        const ai = await classifyEventLocalAPI(data.title, data.description);
+
+        // salva badge localmente (por id, quando possível; senão por hash)
+        const key = makeAiKey(createdId, data.title, data.description);
+        saveAiBadge(key, ai.label);
+
+        // notifica a UI (cards) para atualizar o selo em tempo real
+        window.dispatchEvent(
+          new CustomEvent("event-ai-updated", {
+            detail: { id: createdId, key, ai },
+          })
+        );
+
+        // 3) (Opcional) Persistir no backend se existir PATCH com ai_label/ai_score:
+        // if (createdId) {
+        //   await apiFetch(`/api/events/${createdId}`, {
+        //     method: "PATCH",
+        //     body: JSON.stringify({
+        //       ai_label: ai.label,
+        //       ai_score: ai.score,
+        //       ai_version: ai.version,
+        //     }),
+        //   });
+        // }
+      } catch {
+        // falha na IA não bloqueia o fluxo
+      }
     },
     [onConfirm, handleClose]
   );
@@ -257,15 +307,15 @@ export function NewPostModal({
                         Moedas
                       </SelectLabel>
 
-                      {coinOptions.map((c) => (
-                        <SelectItem
-                          key={c.id}
-                          value={c.id}
-                          className="focus:bg-white/10 focus:text-white"
-                        >
-                          {c.name} ({c.symbol})
-                        </SelectItem>
-                      ))}
+                        {coinOptions.map((c) => (
+                          <SelectItem
+                            key={c.id}
+                            value={c.id}
+                            className="focus:bg-white/10 focus:text-white"
+                          >
+                            {c.name} ({c.symbol})
+                          </SelectItem>
+                        ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
@@ -351,4 +401,19 @@ function Counter({
       </span>
     </div>
   );
+}
+
+/* ===== Helpers para badge IA (key por id ou por hash de título+descrição) ===== */
+function makeAiKey(id: string | null, title: string, description: string) {
+  return `event_ai_${id ?? simpleHash(`${title}::${description}`)}`;
+}
+function saveAiBadge(key: string, label: "crypto" | "offtopic" | "uncertain") {
+  try {
+    localStorage.setItem(key, JSON.stringify({ label, at: Date.now() }));
+  } catch {}
+}
+function simpleHash(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h << 5) - h + s.charCodeAt(i), h |= 0;
+  return Math.abs(h).toString(36);
 }

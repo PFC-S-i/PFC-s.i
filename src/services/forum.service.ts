@@ -89,6 +89,9 @@ export type ApiEvent = {
   updated_at?: string | null;
   likes_count?: number;
   dislikes_count?: number;
+  ai_label?: "crypto" | "offtopic" | "uncertain" | null;
+  ai_score?: number | null;
+  ai_version?: string | null;
 };
 
 export type EventsListResponse = {

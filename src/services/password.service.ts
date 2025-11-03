@@ -1,6 +1,28 @@
 const API = (
   process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
 ).replace(/\/+$/, "");
+ 
+async function tryParseJson(res: Response): Promise<unknown | null> {
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+function toMessage(data: unknown, fallback: string): string {
+  if (typeof data === "string") return data;
+  if (data && typeof data === "object") {
+    const obj = data as Record<string, unknown>;
+    if (typeof obj.message === "string") return obj.message;
+    const d = obj.detail as unknown;
+    if (typeof d === "string") return d;
+    if (Array.isArray(d) && d[0] && typeof d[0] === "object") {
+      const first = d[0] as Record<string, unknown>;
+      if (typeof first.msg === "string") return first.msg;
+    }
+  }
+  return fallback;
+}
 
 export async function requestPasswordReset(
   email: string,
@@ -16,33 +38,19 @@ export async function requestPasswordReset(
     signal,
   });
 
-  // Se a API retornar erro, tentamos extrair a mensagem
   if (!res.ok) {
-    let detail = "Não foi possível enviar as instruções. Tente novamente.";
-    try {
-      const data = await res.json();
-      if (typeof data === "string") return data; // fallback incomum
-      if (Array.isArray(data?.detail) && data.detail[0]?.msg) {
-        detail = data.detail[0].msg;
-      } else if (data?.detail) {
-        detail =
-          typeof data.detail === "string"
-            ? data.detail
-            : JSON.stringify(data.detail);
-      }
-    } catch {
-      /* ignore parsing errors */
-    }
-    throw new Error(detail);
+    const data = await tryParseJson(res);
+    throw new Error(
+      toMessage(data, "Não foi possível enviar as instruções. Tente novamente.")
+    );
   }
 
-  // Espera um JSON string: "ok" / "enviado" etc.
-  try {
-    const data = await res.json();
-    return typeof data === "string" ? data : "Verifique seu e-mail.";
-  } catch {
-    return "Verifique seu e-mail.";
-  }
+  const data = await tryParseJson(res);
+  if (typeof data === "string") return data;
+  return toMessage(
+    data,
+    "Se existir uma conta, enviaremos o link de redefinição."
+  );
 }
 
 export async function resetPassword(
@@ -50,10 +58,6 @@ export async function resetPassword(
   newPassword: string,
   signal?: AbortSignal
 ): Promise<string> {
-  const API = (
-    process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
-  ).replace(/\/+$/, "");
-
   const res = await fetch(`${API}/api/auth/reset-password`, {
     method: "POST",
     headers: {
@@ -65,29 +69,15 @@ export async function resetPassword(
   });
 
   if (!res.ok) {
-    let detail =
+    const data = await tryParseJson(res);
+    const fallback =
       res.status === 400
         ? "Token inválido ou expirado. Solicite um novo link."
         : "Não foi possível redefinir a senha. Tente novamente.";
-    try {
-      const data = await res.json();
-      if (typeof data === "string") detail = data;
-      else if (data?.detail) {
-        detail =
-          typeof data.detail === "string"
-            ? data.detail
-            : JSON.stringify(data.detail);
-      }
-    } catch {
-      /* ignore */
-    }
-    throw new Error(detail);
+    throw new Error(toMessage(data, fallback));
   }
 
-  try {
-    const data = await res.json();
-    return typeof data === "string" ? data : "Senha redefinida com sucesso.";
-  } catch {
-    return "Senha redefinida com sucesso.";
-  }
+  const data = await tryParseJson(res);
+  if (typeof data === "string") return data;
+  return toMessage(data, "Senha redefinida com sucesso.");
 }
