@@ -105,8 +105,8 @@ export type CreateEventInput = {
   title: string;
   description: string;
   coin_id: string;
-  starts_at?: string;
-  ends_at?: string;
+  starts_at?: string; // ISO UTC
+  ends_at?: string;   // ISO UTC
 };
 
 export type UpdateEventInput = CreateEventInput;
@@ -163,10 +163,25 @@ export async function getEvent(id: string): Promise<ApiEvent> {
   return http<ApiEvent>(`/api/events/${id}`, { method: "GET" });
 }
 
+/**
+ * Cria evento garantindo que starts_at e ends_at SEMPRE sejam enviados.
+ * - Se o chamador não passar datas, usamos nowIso para ambos.
+ * - Se passar apenas starts_at, usamos o mesmo valor em ends_at (compatibilidade com back que exige os dois).
+ */
 export async function createEvent(input: CreateEventInput): Promise<ApiEvent> {
+  const nowIso = new Date().toISOString();
+
+  const payload = {
+    title: (input.title ?? "").trim(),
+    description: (input.description ?? "").trim(),
+    coin_id: input.coin_id,
+    starts_at: input.starts_at ?? nowIso,
+    ends_at: input.ends_at ?? input.starts_at ?? nowIso,
+  };
+
   return http<ApiEvent>("/api/events", {
     method: "POST",
-    body: JSON.stringify(input),
+    body: JSON.stringify(payload),
   });
 }
 
@@ -174,9 +189,23 @@ export async function updateEvent(
   id: string,
   input: UpdateEventInput
 ): Promise<ApiEvent> {
+  // Para PATCH, enviamos só o que fizer sentido — mas se o back exigir ambas as datas,
+  // mantemos a mesma regra do create.
+  const nowIso = new Date().toISOString();
+  const body: Record<string, unknown> = {
+    title: input.title?.trim(),
+    description: input.description?.trim(),
+    coin_id: input.coin_id,
+  };
+
+  if (input.starts_at || input.ends_at) {
+    body.starts_at = input.starts_at ?? nowIso;
+    body.ends_at = input.ends_at ?? input.starts_at ?? nowIso;
+  }
+
   return http<ApiEvent>(`/api/events/${id}`, {
     method: "PATCH",
-    body: JSON.stringify(input),
+    body: JSON.stringify(body),
   });
 }
 

@@ -153,3 +153,88 @@ export async function searchCoins(q: string, perPage = 20, signal?: AbortSignal)
     throw e;
   }
 }
+
+// === Tipos para detalhe e série do gráfico ===
+export type CoinMarket = {
+  id: string;
+  symbol: string;
+  name: string;
+  image?: string | null;
+  current_price: number;
+  price_change_percentage_24h?: number | null;
+  market_cap?: number | null;
+  total_volume?: number | null;
+  high_24h?: number | null;
+  low_24h?: number | null;
+};
+
+export type ChartPoint = { t: number; price: number };
+
+// Helper local
+async function getJSON<T>(url: string, init?: RequestInit): Promise<T> {
+  const r = await fetch(url, { method: "GET", cache: "no-store", ...(init || {}) });
+  if (!r.ok) throw new Error(await r.text());
+  return (await r.json()) as T;
+}
+
+/**
+ * Detalhe de uma moeda (tenta /api/prices/coins?ids=..., depois /api/markets?ids=..., e por fim o top).
+ */
+export async function getCoinMarket(
+  id: string,
+  vs: "brl" | "usd" = "brl"
+): Promise<CoinMarket> {
+  // 1) /api/prices/coins?ids=...
+  try {
+    const data = await getJSON<CoinMarket[] | { items?: CoinMarket[] }>(
+      `/api/prices/coins?ids=${encodeURIComponent(id)}&vs=${vs}`
+    );
+    const items = Array.isArray(data) ? data : data.items ?? [];
+    if (items.length) return items[0]!;
+  } catch {}
+
+  // 2) /api/markets?ids=...
+  try {
+    const data = await getJSON<CoinMarket[] | { items?: CoinMarket[] }>(
+      `/api/markets?ids=${encodeURIComponent(id)}&vs=${vs}`
+    );
+    const items = Array.isArray(data) ? data : data.items ?? [];
+    if (items.length) return items[0]!;
+  } catch {}
+
+  // 3) fallback: pega top N e filtra
+  const top = await getJSON<CoinMarket[]>(`/api/markets?vs=${vs}&count=100`);
+  const found = top.find((c) => c.id === id);
+  if (found) return found;
+
+  throw new Error("Moeda não encontrada");
+}
+
+export async function getCoinChart(
+  id: string,
+  hours = 24,
+  vs: "brl" | "usd" = "brl"
+): Promise<ChartPoint[]> {
+  // 1) tenta a rota simples
+  let r = await fetch(`/api/prices/coin-chart/${encodeURIComponent(id)}?hours=${hours}&vs=${vs}`, {
+    method: "GET",
+    cache: "no-store",
+  });
+  if (r.ok) {
+    const raw = (await r.json()) as { items?: { t: number; price: number }[]; prices?: [number, number][] };
+    if (raw.items) return raw.items.map((p) => ({ t: Number(p.t), price: Number(p.price) }));
+    const arr = raw.prices ?? [];
+    return arr.map((p) => ({ t: Number(p[0]), price: Number(p[1]) }));
+  }
+
+  // 2) fallback para a rota aninhada (caso você já tenha criado)
+  r = await fetch(`/api/prices/coins/${encodeURIComponent(id)}/chart?hours=${hours}&vs=${vs}`, {
+    method: "GET",
+    cache: "no-store",
+  });
+  if (!r.ok) throw new Error(await r.text());
+  const raw = (await r.json()) as { items?: { t: number; price: number }[]; prices?: [number, number][] };
+  if (raw.items) return raw.items.map((p) => ({ t: Number(p.t), price: Number(p.price) }));
+  const arr = raw.prices ?? [];
+  return arr.map((p) => ({ t: Number(p[0]), price: Number(p[1]) }));
+}

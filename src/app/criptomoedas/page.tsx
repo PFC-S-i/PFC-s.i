@@ -8,6 +8,7 @@ import {
   addFavorite,
   removeFavorite,
 } from "@/services/favorites.service";
+import CoinDetailsModal from "./components/coin-details-modal";
 
 type Market = {
   id: string;
@@ -42,6 +43,9 @@ export default function CriptomoedasPage() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [favBusy, setFavBusy] = useState<Set<string>>(new Set());
 
+  // estado do modal
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
   const abortRef = useRef<AbortController | null>(null);
 
   // Carrega favoritos do usuário (se logado)
@@ -49,7 +53,7 @@ export default function CriptomoedasPage() {
     let cancelled = false;
     (async () => {
       try {
-        const set = await listFavorites(); // 401 => retorna Set() (conforme seu service)
+        const set = await listFavorites();
         if (!cancelled) setFavorites(set);
       } catch {
         // segue sem favoritos
@@ -90,18 +94,17 @@ export default function CriptomoedasPage() {
   }, []);
 
   // Alterna favorito (otimista, usa backend)
-  async function toggleFav(id: string) {
+  async function toggleFav(id: string, e?: React.MouseEvent) {
+    // não deixar abrir modal quando clicar na estrela
+    if (e) e.stopPropagation();
     if (favBusy.has(id)) return;
 
     const wasFav = favorites.has(id);
     setFavBusy((s) => new Set(s).add(id));
     setFavorites((prev) => {
       const next = new Set(prev);
-      if (wasFav) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      if (wasFav) next.delete(id);
+      else next.add(id);
       return next;
     });
 
@@ -115,11 +118,8 @@ export default function CriptomoedasPage() {
       // Reverte em caso de erro (ex.: 401)
       setFavorites((prev) => {
         const next = new Set(prev);
-        if (wasFav) {
-          next.add(id);
-        } else {
-          next.delete(id);
-        }
+        if (wasFav) next.add(id);
+        else next.delete(id);
         return next;
       });
     } finally {
@@ -193,35 +193,29 @@ export default function CriptomoedasPage() {
           : "";
 
       return (
-        <div
+        <button
           key={c.id}
-          className="grid grid-cols-[56px_1fr_180px_140px_56px] items-center px-6 py-4 rounded-2xl bg-[#1B1B1B] border border-white/10 hover:border-white/20 transition-colors"
+          onClick={() => setSelectedId(c.id)}
+          className="grid grid-cols-[56px_1fr_180px_140px_56px] items-center px-6 py-4 rounded-2xl bg-[#1B1B1B] border border-white/10 hover:border-white/20 hover:bg-white/5 transition-colors text-left cursor-pointer"
         >
           <div className="opacity-80">{c.market_cap_rank ?? "—"}</div>
 
           <div className="flex items-center gap-3">
             <div className="flex flex-col">
               <span className="font-medium">{c.name}</span>
-              <span className="text-xs opacity-60">
-                {c.symbol?.toUpperCase()}
-              </span>
+              <span className="text-xs opacity-60">{c.symbol?.toUpperCase()}</span>
             </div>
           </div>
 
-          <div className="text-right font-medium">
-            {fmtBRL(c.current_price)}
-          </div>
+          <div className="text-right font-medium">{fmtBRL(c.current_price)}</div>
 
-          <div className={`text-right font-medium ${changeClass}`}>
-            {fmtPct(change)}
-          </div>
+          <div className={`text-right font-medium ${changeClass}`}>{fmtPct(change)}</div>
 
           <div className="flex justify-end">
+            <span className="sr-only">Favorito</span>
             <button
-              aria-label={
-                isFav ? "Remover dos favoritos" : "Adicionar aos favoritos"
-              }
-              onClick={() => toggleFav(c.id)}
+              aria-label={isFav ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+              onClick={(e) => toggleFav(c.id, e)}
               disabled={favBusy.has(c.id)}
               className="p-2 rounded-xl hover:bg-white/5 active:scale-95 disabled:opacity-60"
               title="Favoritar"
@@ -233,7 +227,7 @@ export default function CriptomoedasPage() {
               />
             </button>
           </div>
-        </div>
+        </button>
       );
     });
   })();
@@ -263,6 +257,8 @@ export default function CriptomoedasPage() {
 
         {content}
       </div>
+
+      <CoinDetailsModal open={!!selectedId} coinId={selectedId} vs="brl" onClose={() => setSelectedId(null)} />
 
       <div className="mt-14 h-px w-full bg-white/20" />
     </main>

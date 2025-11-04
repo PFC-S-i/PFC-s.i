@@ -1,3 +1,4 @@
+// src/app/forum/components/new-post-modal.tsx
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -9,7 +10,6 @@ import { classifyEventLocalAPI } from "@/services/ai.service";
 
 import { useCharCounter } from "@/app/forum/hooks/useCharCounter";
 import { classNames } from "@/app/forum/lib/utils";
-import { type CoinOption, topCoins } from "@/services/prices.service";
 import { postSchema } from "@/app/schemas/post.schema";
 import { Button } from "@/components";
 import {
@@ -30,23 +30,29 @@ type NewPostForm = z.infer<typeof formSchema>;
 type Props = {
   open: boolean;
   onClose: () => void;
-  /** Chamado no submit (tanto criar quanto editar)
-   * Pode devolver void OU o objeto criado (com id) OU uma Promise de ambos.
-   */
+  /** Envia starts_at e ends_at como o horário exato do submit (ISO UTC) */
   onConfirm: (data: {
     title: string;
     description: string;
     coin_id: string;
+    starts_at: string; // ISO UTC
+    ends_at: string;   // ISO UTC
   }) => void | { id?: string } | Promise<void | { id?: string }>;
-  /** Novo: modo do modal */
   mode?: "create" | "edit";
-  /** Novo: dados iniciais quando editar */
   initialData?: Partial<Pick<NewPostForm, "title" | "description" | "coin_id">>;
 };
 
 const TITLE_MAX = 120;
 const DESC_MAX = 5000;
-const DEFAULT_VALUES: NewPostForm = { title: "", description: "", coin_id: "" };
+
+/** Tipo local para opções exibidas no select */
+type CoinOption = { id: string; name: string; symbol?: string | null };
+
+const DEFAULT_VALUES: NewPostForm = {
+  title: "",
+  description: "",
+  coin_id: "",
+};
 
 export function NewPostModal({
   open,
@@ -68,11 +74,9 @@ export function NewPostModal({
     defaultValues: DEFAULT_VALUES,
   });
 
-  // 🔁 sempre que abrir no modo edição, injeta initialData
+  // 🔁 Preenche quando abrir em modo edição
   useEffect(() => {
-    if (open) {
-      reset({ ...DEFAULT_VALUES, ...initialData });
-    }
+    if (open) reset({ ...DEFAULT_VALUES, ...initialData });
   }, [open, initialData, reset]);
 
   const { ref: titleFieldRef, ...titleReg } = register("title");
@@ -80,10 +84,7 @@ export function NewPostModal({
 
   const titleVal = watch("title");
   const descVal = watch("description");
-  const { count: titleCount, pct: titlePct } = useCharCounter(
-    titleVal,
-    TITLE_MAX
-  );
+  const { count: titleCount, pct: titlePct } = useCharCounter(titleVal, TITLE_MAX);
   const { count: descCount, pct: descPct } = useCharCounter(descVal, DESC_MAX);
 
   const titleRef = useRef<HTMLInputElement | null>(null);
@@ -97,77 +98,50 @@ export function NewPostModal({
     onClose();
   }, [onClose, reset]);
 
-  // ✅ NOVO FLUXO: cria primeiro, classifica depois (não bloqueia UI)
+  // ✅ Cria/edita primeiro; classifica depois (não bloqueia UI)
   const onValid = useCallback(
     async (data: NewPostForm) => {
-      // 1) Cria/edita normalmente
+      // timestamp único no momento do submit (mesmo valor para start e end)
+      const nowIso = new Date().toISOString();
+
       const maybe = await Promise.resolve(
         onConfirm({
           title: data.title.trim(),
           description: data.description.trim(),
           coin_id: data.coin_id,
+          starts_at: nowIso,
+          ends_at: nowIso,
         })
       );
 
-      // tenta capturar o id retornado (se o pai devolver)
       let createdId: string | null = null;
-      if (
-        maybe &&
-        typeof maybe === "object" &&
-        "id" in (maybe as any) &&
-        typeof (maybe as any).id === "string"
-      ) {
+      if (maybe && typeof maybe === "object" && "id" in (maybe as any) && typeof (maybe as any).id === "string") {
         createdId = (maybe as any).id;
       }
 
-      // fecha o modal imediatamente
       handleClose();
 
-      // 2) Classifica em background (sem travar a tela)
       try {
         const ai = await classifyEventLocalAPI(data.title, data.description);
-
-        // salva badge localmente (por id, quando possível; senão por hash)
         const key = makeAiKey(createdId, data.title, data.description);
         saveAiBadge(key, ai.label);
-
-        // notifica a UI (cards) para atualizar o selo em tempo real
-        window.dispatchEvent(
-          new CustomEvent("event-ai-updated", {
-            detail: { id: createdId, key, ai },
-          })
-        );
-
-        // 3) (Opcional) Persistir no backend se existir PATCH com ai_label/ai_score:
-        // if (createdId) {
-        //   await apiFetch(`/api/events/${createdId}`, {
-        //     method: "PATCH",
-        //     body: JSON.stringify({
-        //       ai_label: ai.label,
-        //       ai_score: ai.score,
-        //       ai_version: ai.version,
-        //     }),
-        //   });
-        // }
+        window.dispatchEvent(new CustomEvent("event-ai-updated", { detail: { id: createdId, key, ai } }));
       } catch {
-        // falha na IA não bloqueia o fluxo
+        /* classificação falhou → não bloqueia */
       }
     },
     [onConfirm, handleClose]
   );
 
-  const submit = useCallback(
-    () => handleSubmit(onValid)(),
-    [handleSubmit, onValid]
-  );
+  const submit = useCallback(() => handleSubmit(onValid)(), [handleSubmit, onValid]);
 
+  // Acessibilidade + atalhos
   useEffect(() => {
     if (!open) return;
     const t = setTimeout(() => titleRef.current?.focus(), 50);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") handleClose();
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "enter")
-        void submit();
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "enter") void submit();
     };
     document.addEventListener("keydown", onKey);
     return () => {
@@ -176,30 +150,49 @@ export function NewPostModal({
     };
   }, [open, handleClose, submit]);
 
-  // Carrega TOP moedas ao abrir
+  // Carrega TOP moedas — via /api/coin-options (coerente com /api/markets)
   useEffect(() => {
     if (!open) return;
     let alive = true;
+    const ac = new AbortController();
+
     (async () => {
       try {
         setLoadingCoins(true);
-        const data = await topCoins(20);
-        if (alive) setCoinOptions(data);
+        const origin =
+          typeof window !== "undefined"
+            ? window.location.origin
+            : process.env.NEXT_PUBLIC_SITE_ORIGIN || "http://localhost:3000";
+        const endpoint = new URL(`/api/coin-options?vs=brl&count=20&page=1`, origin).toString();
+
+        const r = await fetch(endpoint, { signal: ac.signal, cache: "no-store" });
+        if (!r.ok) throw new Error(await r.text());
+
+        const data = (await r.json()) as { id: string; name: string; symbol: string | null }[];
+        if (alive) {
+          const mapped: CoinOption[] = data.map((d) => ({
+            id: d.id,
+            name: d.name,
+            symbol: d.symbol ?? null,
+          }));
+          setCoinOptions(mapped);
+        }
       } catch {
         if (alive) setCoinOptions([]);
       } finally {
         if (alive) setLoadingCoins(false);
       }
     })();
+
     return () => {
       alive = false;
+      ac.abort();
     };
   }, [open]);
 
   if (!open) return null;
 
-  const titleLabel =
-    mode === "edit" ? "Editar notícia" : "Publicar uma notícia";
+  const titleLabel = mode === "edit" ? "Editar notícia" : "Publicar uma notícia";
   const submitLabel = mode === "edit" ? "Salvar" : "Publicar";
   const SubmitIcon = mode === "edit" ? Pencil : Plus;
 
@@ -223,15 +216,10 @@ export function NewPostModal({
         >
           <div className="flex items-center justify-between gap-3 px-5 pt-5">
             <div>
-              <h2
-                id="new-post-title"
-                className="text-lg md:text-xl font-semibold"
-              >
+              <h2 id="new-post-title" className="text-lg md:text-xl font-semibold">
                 {titleLabel}
               </h2>
-              {loadingCoins && (
-                <p className="text-xs opacity-70 mt-1">Carregando moedas…</p>
-              )}
+              {loadingCoins && <p className="text-xs opacity-70 mt-1">Carregando moedas…</p>}
             </div>
           </div>
 
@@ -258,24 +246,17 @@ export function NewPostModal({
               className={classNames(
                 "w-full rounded-xl bg-[#121212] border px-3 py-2 outline-none",
                 "placeholder:opacity-50",
-                errors.title
-                  ? "border-red-500/60"
-                  : "border-white/10 focus:border"
+                errors.title ? "border-red-500/60" : "border-white/10 focus:border"
               )}
               maxLength={TITLE_MAX}
             />
             <div className="mt-1 flex items-center justify-between text-xs">
-              <p className="text-red-400 min-h-[1.25rem]">
-                {errors.title?.message || "\u00A0"}
-              </p>
+              <p className="text-red-400 min-h-[1.25rem]">{errors.title?.message || "\u00A0"}</p>
               <Counter value={titleCount} pct={titlePct} max={TITLE_MAX} />
             </div>
 
             {/* Moeda */}
-            <label
-              className="block text-sm font-medium mt-4 mb-1"
-              htmlFor="coin_id"
-            >
+            <label className="block text-sm font-medium mt-4 mb-1" htmlFor="coin_id">
               Moeda
             </label>
             <Controller
@@ -303,19 +284,14 @@ export function NewPostModal({
                     )}
                   >
                     <SelectGroup>
-                      <SelectLabel className="px-2 py-1 text-xs opacity-70">
-                        Moedas
-                      </SelectLabel>
+                      <SelectLabel className="px-2 py-1 text-xs opacity-70">Moedas</SelectLabel>
 
-                        {coinOptions.map((c) => (
-                          <SelectItem
-                            key={c.id}
-                            value={c.id}
-                            className="focus:bg-white/10 focus:text-white"
-                          >
-                            {c.name} ({c.symbol})
-                          </SelectItem>
-                        ))}
+                      {coinOptions.map((c) => (
+                        <SelectItem key={c.id} value={c.id} className="focus:bg-white/10 focus:text-white">
+                          {c.name}
+                          {c.symbol ? ` (${String(c.symbol).toUpperCase()})` : ""}
+                        </SelectItem>
+                      ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
@@ -326,10 +302,7 @@ export function NewPostModal({
             </p>
 
             {/* Descrição */}
-            <label
-              className="block text-sm font-medium mt-4 mb-1"
-              htmlFor="description"
-            >
+            <label className="block text-sm font-medium mt-4 mb-1" htmlFor="description">
               Descrição
             </label>
             <textarea
@@ -345,9 +318,7 @@ export function NewPostModal({
               maxLength={DESC_MAX}
             />
             <div className="mt-1 flex items-center justify-between text-xs">
-              <p className="text-red-400 min-h-[1.25rem]">
-                {errors.description?.message || "\u00A0"}
-              </p>
+              <p className="text-red-400 min-h-[1.25rem]">{errors.description?.message || "\u00A0"}</p>
               <Counter value={descCount} pct={descPct} max={DESC_MAX} />
             </div>
 
@@ -367,9 +338,7 @@ export function NewPostModal({
                 variant="default"
                 disabled={!isValid || isSubmitting}
                 className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-medium disabled:opacity-60 disabled:cursor-not-allowed"
-                title={
-                  !isValid ? "Preencha os campos obrigatórios" : submitLabel
-                }
+                title={!isValid ? "Preencha os campos obrigatórios" : submitLabel}
               >
                 <SubmitIcon className="h-4 w-4" />
                 {submitLabel}
@@ -382,15 +351,7 @@ export function NewPostModal({
   );
 }
 
-function Counter({
-  value,
-  pct,
-  max,
-}: {
-  value: number;
-  pct: number;
-  max: number;
-}) {
+function Counter({ value, pct, max }: { value: number; pct: number; max: number }) {
   return (
     <div className="flex items-center gap-2">
       <div className="h-1.5 w-24 rounded-full bg-white/10 overflow-hidden">
@@ -414,6 +375,9 @@ function saveAiBadge(key: string, label: "crypto" | "offtopic" | "uncertain") {
 }
 function simpleHash(s: string) {
   let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h << 5) - h + s.charCodeAt(i), h |= 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h << 5) - h + s.charCodeAt(i);
+    h |= 0;
+  }
   return Math.abs(h).toString(36);
 }
