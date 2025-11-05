@@ -1,7 +1,6 @@
-// src/app/api/prices/coin-chart/[id]/route.ts
 import { NextResponse } from "next/server";
 
-export const revalidate = 120; // 2 min de cache em edge/CDN
+export const revalidate = 120; // cache em CDN/edge por 2 min
 const MAX_HOURS = 24 * 31;
 
 function clamp(n: number, min: number, max: number) {
@@ -24,11 +23,10 @@ async function fetchWithRetry(
   return fetch(url.toString(), { headers, next: { revalidate } });
 }
 
-type RouteParams = { id: string };
-
 export async function GET(
-  req: Request, // <- use o Request nativo
-  { params }: { params: RouteParams } // <- contexto com params (sem Promise)
+  req: Request,
+  // ⚠️ use um type literal inline (sem alias) para o contexto:
+  { params }: { params: { id: string } }
 ) {
   const id = params.id;
   const { searchParams } = new URL(req.url);
