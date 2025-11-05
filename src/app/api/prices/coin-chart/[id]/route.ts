@@ -25,10 +25,11 @@ async function fetchWithRetry(
 
 export async function GET(
   req: Request,
-  // ⚠️ use um type literal inline (sem alias) para o contexto:
-  { params }: { params: { id: string } }
+  // 👇 No Next 15 o params é Promise — tipagem inline obrigatória
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = params.id;
+  const { id } = await params; // 👈 await no params
+
   const { searchParams } = new URL(req.url);
   const vs = (searchParams.get("vs") ?? "brl").toLowerCase();
   const hours = clamp(Number(searchParams.get("hours") ?? "24"), 1, MAX_HOURS);
