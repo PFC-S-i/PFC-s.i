@@ -1921,6 +1921,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/recharts@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "@types/recharts@npm:2.0.1"
+  dependencies:
+    recharts: "npm:*"
+  checksum: 10c0/d79ddc5c3b34864f4ae48d3678b9771fd0f274a55cdf5e424990010e4465e94f7da656df34280c1a1024de17fe66435b9dc7ffe94311baa4732d7a04d7ac38aa
+  languageName: node
+  linkType: hard
+
 "@types/use-sync-external-store@npm:^0.0.6":
   version: 0.0.6
   resolution: "@types/use-sync-external-store@npm:0.0.6"
@@ -4508,6 +4517,7 @@ __metadata:
     "@types/react-day-picker": "npm:^5.3.0"
     "@types/react-dom": "npm:^19"
     "@types/react-google-recaptcha": "npm:^2.1.9"
+    "@types/recharts": "npm:^2.0.1"
     "@uidotdev/usehooks": "npm:^2.4.1"
     axios: "npm:^1.11.0"
     class-variance-authority: "npm:^0.7.1"
@@ -5067,7 +5077,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"recharts@npm:^3.3.0":
+"recharts@npm:*, recharts@npm:^3.3.0":
   version: 3.3.0
   resolution: "recharts@npm:3.3.0"
   dependencies:

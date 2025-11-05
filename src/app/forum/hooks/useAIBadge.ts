@@ -1,13 +1,18 @@
-'use client';
+// src/app/forum/hooks/useAIBadge.ts
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
-export type AILabel = 'crypto' | 'offtopic' | 'uncertain';
-const EVENT_NAME = 'event-ai-updated';
+export type AILabel = "crypto" | "offtopic" | "uncertain";
 
-function simpleHash(s: string) {
+const EVENT_NAME = "event-ai-updated";
+
+function simpleHash(s: string): string {
   let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h << 5) - h + s.charCodeAt(i), h |= 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h << 5) - h + s.charCodeAt(i);
+    h |= 0; // força para 32 bits
+  }
   return Math.abs(h).toString(36);
 }
 
@@ -17,17 +22,34 @@ function readLabelFromLocalStorage(keys: string[]): AILabel | null {
       const raw = localStorage.getItem(k);
       if (!raw) continue;
       const o = JSON.parse(raw) as { label?: AILabel };
-      if (o?.label === 'crypto' || o?.label === 'offtopic' || o?.label === 'uncertain') {
+      if (
+        o?.label === "crypto" ||
+        o?.label === "offtopic" ||
+        o?.label === "uncertain"
+      ) {
         return o.label;
       }
     }
-  } catch {}
+  } catch {
+    // ignore
+  }
   return null;
 }
 
-export function makeAiKeyFromData(id: string | null, title: string, description?: string) {
-  return `event_ai_${id ?? simpleHash(`${title}::${description ?? ''}`)}`;
+export function makeAiKeyFromData(
+  id: string | null,
+  title: string,
+  description?: string
+): string {
+  return `event_ai_${id ?? simpleHash(`${title}::${description ?? ""}`)}`;
 }
+
+// payload que o modal dispara:
+type AiUpdatedDetail = {
+  id?: string | null;
+  key?: string;
+  ai?: { label?: AILabel };
+};
 
 /**
  * Lê o rótulo salvo no localStorage (pela key com id ou pela key hash) e
@@ -37,34 +59,43 @@ export function useAIBadge(params: {
   id?: string | null;
   title: string;
   description?: string;
-  initial?: AILabel | null; // se o back passar algo no futuro
+  initial?: AILabel | null;
 }) {
-  const { id = null, title, description = '', initial = null } = params;
+  const { id = null, title, description = "", initial = null } = params;
   const [label, setLabel] = useState<AILabel | null>(initial);
 
   useEffect(() => {
-    // chaves possíveis: por id (preferência) e por hash (fallback)
-    const keyById = `event_ai_${id ?? ''}`;
+    const keyById = `event_ai_${id ?? ""}`;
     const keyByHash = `event_ai_${simpleHash(`${title}::${description}`)}`;
     const keys = id ? [keyById, keyByHash] : [keyByHash];
 
-    // 1) tenta ler imediatamente do localStorage
+    // 1) tenta ler imediatamente
     const found = readLabelFromLocalStorage(keys);
     if (found) setLabel(found);
 
-    // 2) escuta atualizações do modal
-    const onUpd = (e: Event) => {
-      const d = (e as CustomEvent).detail || {};
-      const key = String(d?.key || '');
-      if (keys.includes(key) && d?.ai?.label) {
-        const v = d.ai.label as AILabel;
-        if (v === 'crypto' || v === 'offtopic' || v === 'uncertain') {
-          setLabel(v);
-        }
+    // 2) escuta atualizações
+    const onUpdate = (e: Event) => {
+      const ce = e as CustomEvent<AiUpdatedDetail>;
+      const detail = ce.detail;
+      if (!detail) return;
+
+      const eventKey = String(detail.key ?? "");
+      if (!keys.includes(eventKey)) return;
+
+      const eventLabel = detail.ai?.label;
+      if (
+        eventLabel === "crypto" ||
+        eventLabel === "offtopic" ||
+        eventLabel === "uncertain"
+      ) {
+        setLabel(eventLabel);
       }
     };
-    window.addEventListener(EVENT_NAME, onUpd as any);
-    return () => window.removeEventListener(EVENT_NAME, onUpd as any);
+
+    window.addEventListener(EVENT_NAME, onUpdate);
+    return () => {
+      window.removeEventListener(EVENT_NAME, onUpdate);
+    };
   }, [id, title, description]);
 
   return label;

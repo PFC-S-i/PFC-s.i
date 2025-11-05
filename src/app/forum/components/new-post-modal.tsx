@@ -27,6 +27,8 @@ const formSchema = postSchema.extend({
 });
 type NewPostForm = z.infer<typeof formSchema>;
 
+type ConfirmResult = void | { id?: string };
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -36,8 +38,8 @@ type Props = {
     description: string;
     coin_id: string;
     starts_at: string; // ISO UTC
-    ends_at: string;   // ISO UTC
-  }) => void | { id?: string } | Promise<void | { id?: string }>;
+    ends_at: string; // ISO UTC
+  }) => ConfirmResult | Promise<ConfirmResult>;
   mode?: "create" | "edit";
   initialData?: Partial<Pick<NewPostForm, "title" | "description" | "coin_id">>;
 };
@@ -45,7 +47,6 @@ type Props = {
 const TITLE_MAX = 120;
 const DESC_MAX = 5000;
 
-/** Tipo local para opções exibidas no select */
 type CoinOption = { id: string; name: string; symbol?: string | null };
 
 const DEFAULT_VALUES: NewPostForm = {
@@ -74,7 +75,7 @@ export function NewPostModal({
     defaultValues: DEFAULT_VALUES,
   });
 
-  // 🔁 Preenche quando abrir em modo edição
+  // Preenche quando abrir em modo edição
   useEffect(() => {
     if (open) reset({ ...DEFAULT_VALUES, ...initialData });
   }, [open, initialData, reset]);
@@ -84,7 +85,10 @@ export function NewPostModal({
 
   const titleVal = watch("title");
   const descVal = watch("description");
-  const { count: titleCount, pct: titlePct } = useCharCounter(titleVal, TITLE_MAX);
+  const { count: titleCount, pct: titlePct } = useCharCounter(
+    titleVal,
+    TITLE_MAX
+  );
   const { count: descCount, pct: descPct } = useCharCounter(descVal, DESC_MAX);
 
   const titleRef = useRef<HTMLInputElement | null>(null);
@@ -98,13 +102,11 @@ export function NewPostModal({
     onClose();
   }, [onClose, reset]);
 
-  // ✅ Cria/edita primeiro; classifica depois (não bloqueia UI)
   const onValid = useCallback(
     async (data: NewPostForm) => {
-      // timestamp único no momento do submit (mesmo valor para start e end)
       const nowIso = new Date().toISOString();
 
-      const maybe = await Promise.resolve(
+      const result = await Promise.resolve(
         onConfirm({
           title: data.title.trim(),
           description: data.description.trim(),
@@ -114,26 +116,40 @@ export function NewPostModal({
         })
       );
 
+      // extrai id sem usar any
       let createdId: string | null = null;
-      if (maybe && typeof maybe === "object" && "id" in (maybe as any) && typeof (maybe as any).id === "string") {
-        createdId = (maybe as any).id;
+      if (
+        result &&
+        typeof result === "object" &&
+        "id" in result &&
+        typeof result.id === "string"
+      ) {
+        createdId = result.id;
       }
 
       handleClose();
 
+      // classifica em segundo plano (não bloqueia UX)
       try {
         const ai = await classifyEventLocalAPI(data.title, data.description);
         const key = makeAiKey(createdId, data.title, data.description);
         saveAiBadge(key, ai.label);
-        window.dispatchEvent(new CustomEvent("event-ai-updated", { detail: { id: createdId, key, ai } }));
+        window.dispatchEvent(
+          new CustomEvent("event-ai-updated", {
+            detail: { id: createdId, key, ai },
+          })
+        );
       } catch {
-        /* classificação falhou → não bloqueia */
+        // silencioso
       }
     },
     [onConfirm, handleClose]
   );
 
-  const submit = useCallback(() => handleSubmit(onValid)(), [handleSubmit, onValid]);
+  const submit = useCallback(
+    () => handleSubmit(onValid)(),
+    [handleSubmit, onValid]
+  );
 
   // Acessibilidade + atalhos
   useEffect(() => {
@@ -141,7 +157,8 @@ export function NewPostModal({
     const t = setTimeout(() => titleRef.current?.focus(), 50);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") handleClose();
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "enter") void submit();
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "enter")
+        void submit();
     };
     document.addEventListener("keydown", onKey);
     return () => {
@@ -150,7 +167,7 @@ export function NewPostModal({
     };
   }, [open, handleClose, submit]);
 
-  // Carrega TOP moedas — via /api/coin-options (coerente com /api/markets)
+  // Carrega TOP moedas
   useEffect(() => {
     if (!open) return;
     let alive = true;
@@ -163,19 +180,30 @@ export function NewPostModal({
           typeof window !== "undefined"
             ? window.location.origin
             : process.env.NEXT_PUBLIC_SITE_ORIGIN || "http://localhost:3000";
-        const endpoint = new URL(`/api/coin-options?vs=brl&count=20&page=1`, origin).toString();
+        const endpoint = new URL(
+          `/api/coin-options?vs=brl&count=20&page=1`,
+          origin
+        ).toString();
 
-        const r = await fetch(endpoint, { signal: ac.signal, cache: "no-store" });
+        const r = await fetch(endpoint, {
+          signal: ac.signal,
+          cache: "no-store",
+        });
         if (!r.ok) throw new Error(await r.text());
 
-        const data = (await r.json()) as { id: string; name: string; symbol: string | null }[];
+        const data = (await r.json()) as {
+          id: string;
+          name: string;
+          symbol: string | null;
+        }[];
         if (alive) {
-          const mapped: CoinOption[] = data.map((d) => ({
-            id: d.id,
-            name: d.name,
-            symbol: d.symbol ?? null,
-          }));
-          setCoinOptions(mapped);
+          setCoinOptions(
+            data.map((d) => ({
+              id: d.id,
+              name: d.name,
+              symbol: d.symbol ?? null,
+            }))
+          );
         }
       } catch {
         if (alive) setCoinOptions([]);
@@ -192,7 +220,8 @@ export function NewPostModal({
 
   if (!open) return null;
 
-  const titleLabel = mode === "edit" ? "Editar notícia" : "Publicar uma notícia";
+  const titleLabel =
+    mode === "edit" ? "Editar notícia" : "Publicar uma notícia";
   const submitLabel = mode === "edit" ? "Salvar" : "Publicar";
   const SubmitIcon = mode === "edit" ? Pencil : Plus;
 
@@ -216,10 +245,15 @@ export function NewPostModal({
         >
           <div className="flex items-center justify-between gap-3 px-5 pt-5">
             <div>
-              <h2 id="new-post-title" className="text-lg md:text-xl font-semibold">
+              <h2
+                id="new-post-title"
+                className="text-lg md:text-xl font-semibold"
+              >
                 {titleLabel}
               </h2>
-              {loadingCoins && <p className="text-xs opacity-70 mt-1">Carregando moedas…</p>}
+              {loadingCoins && (
+                <p className="mt-1 text-xs opacity-70">Carregando moedas…</p>
+              )}
             </div>
           </div>
 
@@ -231,7 +265,7 @@ export function NewPostModal({
             }}
           >
             {/* Título */}
-            <label className="block text-sm font-medium mb-1" htmlFor="title">
+            <label className="mb-1 block text-sm font-medium" htmlFor="title">
               Título
             </label>
             <input
@@ -246,17 +280,24 @@ export function NewPostModal({
               className={classNames(
                 "w-full rounded-xl bg-[#121212] border px-3 py-2 outline-none",
                 "placeholder:opacity-50",
-                errors.title ? "border-red-500/60" : "border-white/10 focus:border"
+                errors.title
+                  ? "border-red-500/60"
+                  : "border-white/10 focus:border"
               )}
               maxLength={TITLE_MAX}
             />
             <div className="mt-1 flex items-center justify-between text-xs">
-              <p className="text-red-400 min-h-[1.25rem]">{errors.title?.message || "\u00A0"}</p>
+              <p className="min-h-[1.25rem] text-red-400">
+                {errors.title?.message || "\u00A0"}
+              </p>
               <Counter value={titleCount} pct={titlePct} max={TITLE_MAX} />
             </div>
 
             {/* Moeda */}
-            <label className="block text-sm font-medium mt-4 mb-1" htmlFor="coin_id">
+            <label
+              className="mt-4 mb-1 block text-sm font-medium"
+              htmlFor="coin_id"
+            >
               Moeda
             </label>
             <Controller
@@ -284,12 +325,17 @@ export function NewPostModal({
                     )}
                   >
                     <SelectGroup>
-                      <SelectLabel className="px-2 py-1 text-xs opacity-70">Moedas</SelectLabel>
-
+                      <SelectLabel className="px-2 py-1 text-xs opacity-70">
+                        Moedas
+                      </SelectLabel>
                       {coinOptions.map((c) => (
-                        <SelectItem key={c.id} value={c.id} className="focus:bg-white/10 focus:text-white">
+                        <SelectItem
+                          key={c.id}
+                          value={c.id}
+                          className="focus:bg-white/10 focus:text-white"
+                        >
                           {c.name}
-                          {c.symbol ? ` (${String(c.symbol).toUpperCase()})` : ""}
+                          {c.symbol ? ` (${c.symbol.toUpperCase()})` : ""}
                         </SelectItem>
                       ))}
                     </SelectGroup>
@@ -297,12 +343,15 @@ export function NewPostModal({
                 </Select>
               )}
             />
-            <p className="mt-1 text-xs text-red-400 min-h-[1.25rem]">
+            <p className="mt-1 min-h-[1.25rem] text-xs text-red-400">
               {errors.coin_id?.message || "\u00A0"}
             </p>
 
             {/* Descrição */}
-            <label className="block text-sm font-medium mt-4 mb-1" htmlFor="description">
+            <label
+              className="mt-4 mb-1 block text-sm font-medium"
+              htmlFor="description"
+            >
               Descrição
             </label>
             <textarea
@@ -318,7 +367,9 @@ export function NewPostModal({
               maxLength={DESC_MAX}
             />
             <div className="mt-1 flex items-center justify-between text-xs">
-              <p className="text-red-400 min-h-[1.25rem]">{errors.description?.message || "\u00A0"}</p>
+              <p className="min-h-[1.25rem] text-red-400">
+                {errors.description?.message || "\u00A0"}
+              </p>
               <Counter value={descCount} pct={descPct} max={DESC_MAX} />
             </div>
 
@@ -337,8 +388,10 @@ export function NewPostModal({
                 type="submit"
                 variant="default"
                 disabled={!isValid || isSubmitting}
-                className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-medium disabled:opacity-60 disabled:cursor-not-allowed"
-                title={!isValid ? "Preencha os campos obrigatórios" : submitLabel}
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-medium disabled:cursor-not-allowed disabled:opacity-60"
+                title={
+                  !isValid ? "Preencha os campos obrigatórios" : submitLabel
+                }
               >
                 <SubmitIcon className="h-4 w-4" />
                 {submitLabel}
@@ -351,10 +404,18 @@ export function NewPostModal({
   );
 }
 
-function Counter({ value, pct, max }: { value: number; pct: number; max: number }) {
+function Counter({
+  value,
+  pct,
+  max,
+}: {
+  value: number;
+  pct: number;
+  max: number;
+}) {
   return (
     <div className="flex items-center gap-2">
-      <div className="h-1.5 w-24 rounded-full bg-white/10 overflow-hidden">
+      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-white/10">
         <div className="h-full" style={{ width: `${pct}%` }} aria-hidden />
       </div>
       <span className="tabular-nums opacity-70">
@@ -364,14 +425,16 @@ function Counter({ value, pct, max }: { value: number; pct: number; max: number 
   );
 }
 
-/* ===== Helpers para badge IA (key por id ou por hash de título+descrição) ===== */
+/* ===== Helpers para badge IA ===== */
 function makeAiKey(id: string | null, title: string, description: string) {
   return `event_ai_${id ?? simpleHash(`${title}::${description}`)}`;
 }
 function saveAiBadge(key: string, label: "crypto" | "offtopic" | "uncertain") {
   try {
     localStorage.setItem(key, JSON.stringify({ label, at: Date.now() }));
-  } catch {}
+  } catch {
+    // ignore
+  }
 }
 function simpleHash(s: string) {
   let h = 0;

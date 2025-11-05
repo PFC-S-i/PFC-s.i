@@ -25,6 +25,7 @@ export default function ProfileView() {
   const [error, setError] = useState<string | null>(null);
   const [saveLoading, setSaveLoading] = useState(false);
 
+  // senha
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -34,6 +35,7 @@ export default function ProfileView() {
 
   const { logout } = useAuth();
 
+  // carrega perfil
   useEffect(() => {
     const token = getAuthToken?.();
     if (!token) return;
@@ -48,20 +50,22 @@ export default function ProfileView() {
         setOrigName(n);
         setOrigEmail(e);
       })
-      .catch((e) =>
-        setError(getErrMsg(e) || "Não foi possível carregar seu perfil.")
+      .catch((err) =>
+        setError(getErrMsg(err) || "Não foi possível carregar seu perfil.")
       )
       .finally(() => setProfileLoading(false));
   }, []);
 
   function toggleEdit() {
     if (isEditing) {
+      // cancelar edição
       setName(origName);
       setEmail(origEmail);
       setSuccess(null);
       setError(null);
       setIsEditing(false);
     } else {
+      // iniciar edição
       setSuccess(null);
       setError(null);
       setIsEditing(true);
@@ -85,16 +89,51 @@ export default function ProfileView() {
 
       setIsEditing(false);
       setSuccess("Informações atualizadas.");
-    } catch (e) {
-      setError(getErrMsg(e) || "Não foi possível salvar.");
+    } catch (err) {
+      setError(getErrMsg(err) || "Não foi possível salvar.");
     } finally {
       setSaveLoading(false);
     }
   }
 
+  // submit da troca de senha (bem simples, só valida front)
+  async function handlePasswordSubmit() {
+    setPwdLoading(true);
+    setPwdSuccess(null);
+    setPwdError(null);
+
+    try {
+      if (!currentPassword.trim()) {
+        setPwdError("Informe a senha atual.");
+        return;
+      }
+      if (!newPassword.trim()) {
+        setPwdError("Informe a nova senha.");
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setPwdError("As senhas não coincidem.");
+        return;
+      }
+
+      // aqui você poderia chamar um service ex.: updatePassword(...)
+      // await updatePassword({ currentPassword, newPassword });
+
+      setPwdSuccess("Senha atualizada.");
+      // limpa campos de senha
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      setPwdError(getErrMsg(err) || "Não foi possível atualizar a senha.");
+    } finally {
+      setPwdLoading(false);
+    }
+  }
+
   return (
-    <main className="px-4 md:px-10 lg:px-20 xl:px-32 py-10 text-gray-200">
-      <h1 className="text-3xl font-semibold mb-2">Meu perfil</h1>
+    <main className="py-10 px-4 text-gray-200 md:px-10 lg:px-20 xl:px-32">
+      <h1 className="mb-2 text-3xl font-semibold">Meu perfil</h1>
 
       <AccountCard
         name={name}
@@ -122,7 +161,7 @@ export default function ProfileView() {
         loading={pwdLoading}
         error={pwdError}
         success={pwdSuccess}
-        onSubmit={() => {}}
+        onSubmit={handlePasswordSubmit}
       />
 
       <div className={`${CARD} mt-8 p-6`}>

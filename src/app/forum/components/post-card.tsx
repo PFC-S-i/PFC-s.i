@@ -45,7 +45,7 @@ type AILabel = "crypto" | "offtopic" | "uncertain";
 /* ====== DEBUG LOGGING ====== */
 const DEBUG = (process.env.NEXT_PUBLIC_AI_DEBUG ?? "1") !== "0";
 const TAG = "[AI-BADGE]";
-const d = (...args: any[]) => {
+const d = (...args: unknown[]) => {
   if (DEBUG) console.debug(TAG, ...args);
 };
 
@@ -72,6 +72,7 @@ function runNext() {
       });
   }
 }
+
 function enqueue<T>(fn: () => Promise<T>): Promise<T> {
   d("enqueue task (before) | queue:", queue.length + 1);
   return new Promise((resolve, reject) => {
@@ -87,7 +88,6 @@ function enqueue<T>(fn: () => Promise<T>): Promise<T> {
   });
 }
 
-// Converte qualquer erro para uma mensagem segura
 function toMessage(err: unknown): string {
   return err instanceof Error
     ? err.message
@@ -96,7 +96,6 @@ function toMessage(err: unknown): string {
     : "Erro ao processar ação.";
 }
 
-// Aceitar coinId (camel) ou coin_id (snake) sem usar any
 type ForumPostWithCoin = ForumPost & {
   coinId?: string | null;
   coin_id?: string | null;
@@ -106,7 +105,16 @@ type ForumPostWithCoin = ForumPost & {
 const MAX_RETRIES = 5;
 const BASE_DELAY_MS = 1500;
 
-async function classifyWithRetry(title: string, description: string, max = 3) {
+type ClassifyResult = {
+  label?: AILabel;
+  [key: string]: unknown;
+};
+
+async function classifyWithRetry(
+  title: string,
+  description: string,
+  max = 3
+): Promise<ClassifyResult> {
   let attempt = 0;
   let delay = 1000;
   while (attempt < max) {
@@ -158,15 +166,23 @@ function clearAttempts(lsKey: string) {
     if (typeof window === "undefined") return;
     localStorage.removeItem(attemptsKey(lsKey));
     d("clearAttempts", lsKey);
-  } catch {}
+  } catch {
+    // ignore
+  }
 }
-function scheduleRetry(lsKey: string, title: string, desc: string, postId: string | null) {
+function scheduleRetry(
+  lsKey: string,
+  title: string,
+  desc: string,
+  postId: string | null
+) {
   const attempt = incAttempts(lsKey);
   if (attempt > MAX_RETRIES) {
     d("max retries reached for", lsKey);
     return;
   }
-  const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 600);
+  const delay =
+    BASE_DELAY_MS * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 600);
   d("scheduleRetry", { lsKey, attempt, delay });
   setTimeout(() => {
     tryClassify(lsKey, title, desc, postId);
@@ -178,9 +194,11 @@ function saveAiBadge(key: string, label: AILabel) {
   try {
     localStorage.setItem(key, JSON.stringify({ label, at: Date.now() }));
     d("saved badge to LS:", key, "→", label);
-  } catch {}
+  } catch {
+    // ignore
+  }
 }
-function safeReadLS<T = any>(key: string): T | null {
+function safeReadLS<T = unknown>(key: string): T | null {
   try {
     if (typeof window === "undefined") return null;
     const txt = localStorage.getItem(key);
@@ -192,9 +210,12 @@ function safeReadLS<T = any>(key: string): T | null {
     return null;
   }
 }
-function simpleHash(s: string) {
+function simpleHash(s: string): string {
   let h = 0;
-  for (let i = 0; i < s.length; i++) (h = (h << 5) - h + s.charCodeAt(i)), (h |= 0);
+  for (let i = 0; i < s.length; i++) {
+    h = (h << 5) - h + s.charCodeAt(i);
+    h |= 0;
+  }
   return Math.abs(h).toString(36);
 }
 function makeAiKey(id: string | null, title: string, description: string) {
@@ -204,8 +225,12 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-/* ====== FUNÇÃO GLOBAL DE CLASSIFICAÇÃO COM REAGENDAMENTO ====== */
-function tryClassify(lsKey: string, title: string, desc: string, postId: string | null) {
+function tryClassify(
+  lsKey: string,
+  title: string,
+  desc: string,
+  postId: string | null
+) {
   if (inflightKeys.has(lsKey)) {
     d("skip tryClassify (inflight)", lsKey);
     return;
@@ -214,19 +239,22 @@ function tryClassify(lsKey: string, title: string, desc: string, postId: string 
   d("tryClassify START", { lsKey, postId, title });
 
   enqueue(async () => {
-    // jitter pequeno para espaçar chamadas
+    // pequena espera aleatória pra não bater tudo junto
     await sleep(120 + Math.floor(Math.random() * 180));
-    let res: any = null;
+
+    let res: ClassifyResult | null = null;
     try {
       res = await classifyWithRetry(title, desc, 4);
     } catch (e) {
       d("classifyWithRetry failed", e);
       res = null;
     }
+
     if (res?.label) {
-      saveAiBadge(lsKey, res.label as AILabel);
+      const lbl = res.label as AILabel;
+      saveAiBadge(lsKey, lbl);
       clearAttempts(lsKey);
-      d("dispatch event-ai-updated", { id: postId, label: res.label });
+      d("dispatch event-ai-updated", { id: postId, label: lbl });
       window.dispatchEvent(
         new CustomEvent("event-ai-updated", {
           detail: { id: postId, key: lsKey, ai: res },
@@ -257,10 +285,10 @@ export function PostCard({
   const { toast } = useToast();
 
   const [likes, setLikes] = useState(
-    Number.isFinite(post.likes) ? post.likes! : initialLikes
+    Number.isFinite(post.likes) ? (post.likes as number) : initialLikes
   );
   const [dislikes, setDislikes] = useState(
-    Number.isFinite(post.dislikes) ? post.dislikes! : 0
+    Number.isFinite(post.dislikes) ? (post.dislikes as number) : 0
   );
   const [vote, setVote] = useState<Vote>(0);
   const [pending, setPending] = useState(false);
@@ -268,7 +296,10 @@ export function PostCard({
   const key = meId ? `forum:vote:${meId}:${post.id}` : null;
 
   useEffect(() => {
-    if (!key || typeof window === "undefined") return setVote(0);
+    if (!key || typeof window === "undefined") {
+      setVote(0);
+      return;
+    }
     const n = Number(localStorage.getItem(key));
     setVote(n === 1 || n === -1 || n === 0 ? (n as Vote) : 0);
   }, [key]);
@@ -336,7 +367,6 @@ export function PostCard({
     }
   })();
 
-  // coinId (camel/snake)
   const coinId = (() => {
     const p = post as ForumPostWithCoin;
     const cid = p.coinId ?? p.coin_id;
@@ -344,14 +374,12 @@ export function PostCard({
   })();
   const coinLabel = coinId ?? "—";
 
-  // Badge da IA (lê LS + atualiza por evento)
   const ai = useAIBadge({
     id: post.id ?? null,
     title: post.title ?? "",
     description: post.description ?? "",
   });
 
-  // Classificação automática p/ cards antigos (fila, retry e reagendamento)
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -370,19 +398,24 @@ export function PostCard({
     const lsKey = makeAiKey(post.id ?? null, title, desc);
     d("auto-classify check", { id: post.id, lsKey });
 
-    // se LS já tem (talvez outro card gravou), apenas emitir evento
     const existing = safeReadLS<{ label?: AILabel }>(lsKey);
     if (existing?.label) {
-      d("localStorage already has label → dispatch", { id: post.id, label: existing.label });
+      d("localStorage already has label → dispatch", {
+        id: post.id,
+        label: existing.label,
+      });
       window.dispatchEvent(
         new CustomEvent("event-ai-updated", {
-          detail: { id: post.id ?? null, key: lsKey, ai: { label: existing.label } },
+          detail: {
+            id: post.id ?? null,
+            key: lsKey,
+            ai: { label: existing.label },
+          },
         })
       );
       return;
     }
 
-    // inicia pipeline (com controle global e reagendamento)
     tryClassify(lsKey, title, desc, post.id ?? null);
   }, [ai, post.id, post.title, post.description]);
 
@@ -394,7 +427,6 @@ export function PostCard({
   }`;
   const countClass = "ml-1 tabular-nums text-white/70 min-w-[2ch] text-center";
 
-  // Cor/texto do badge: se sem veredito ainda, "Em análise"
   const badgeColor =
     ai === "crypto"
       ? "bg-green-500/10 text-green-400"
@@ -409,18 +441,18 @@ export function PostCard({
       : "Em análise";
 
   return (
-    <article className="flex gap-3 px-4 py-3 border-b border-white/10">
+    <article className="flex gap-3 border-b border-white/10 px-4 py-3">
       <div className="mt-0.5">
-        <div className="h-10 w-10 rounded-full bg-white/10 grid place-items-center text-sm font-semibold">
+        <div className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-sm font-semibold">
           {avatarInitial}
         </div>
       </div>
 
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 text-sm">
-              <span className="font-semibold truncate">{author}</span>
+              <span className="truncate font-semibold">{author}</span>
               <span className="text-white/40">·</span>
               <time className="text-white/50" dateTime={post.createdAt}>
                 {createdLabel}
@@ -472,7 +504,7 @@ export function PostCard({
                 {canEdit && (
                   <DropdownMenuItem
                     onClick={() => onEdit?.(post)}
-                    className="flex items-center gap-2 focus:bg-white/10 focus:text-white cursor-pointer"
+                    className="flex cursor-pointer items-center gap-2 focus:bg-white/10 focus:text-white"
                   >
                     <Pencil className="h-4 w-4" />
                     Editar
@@ -485,7 +517,7 @@ export function PostCard({
                   <DropdownMenuItem
                     onClick={() => onDelete?.(post)}
                     disabled={deleting}
-                    className="flex items-center gap-2 text-red-400 focus:text-red-400 focus:bg-red-400/10 cursor-pointer data-[disabled]:opacity-60 data-[disabled]:pointer-events-none"
+                    className="flex cursor-pointer items-center gap-2 text-red-400 data-[disabled]:pointer-events-none data-[disabled]:opacity-60 focus:bg-red-400/10 focus:text-red-400"
                   >
                     <Trash className="h-4 w-4 text-red-500" />
                     Excluir
@@ -496,18 +528,25 @@ export function PostCard({
           )}
         </div>
 
+        {/* título */}
+        {post.title ? (
+          <h2 className="mt-2 break-words text-base font-semibold leading-6 text-white">
+            {post.title}
+          </h2>
+        ) : null}
+
         {/* Moeda relacionada */}
         <div className="mt-1 text-xs text-white/60">
           <span className="opacity-70">Moeda relacionada:</span>{" "}
           <span className="font-medium text-white">{coinLabel}</span>
         </div>
 
-        {/* Descrição */}
-        <p className="mt-2 text-[15px] leading-6 whitespace-pre-wrap">
+        {/* descrição */}
+        <p className="mt-2 whitespace-pre-wrap text-[15px] leading-6">
           {post.description}
         </p>
 
-        {/* Ações */}
+        {/* ações */}
         <div className="mt-2 flex items-center gap-5">
           <div className="flex items-center">
             <button

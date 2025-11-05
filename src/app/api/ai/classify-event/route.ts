@@ -1,10 +1,22 @@
-// src/app/api/ai/classify-event/route.ts
 import { NextResponse } from "next/server";
 
-export const runtime = "nodejs"; // garante ambiente Node (não Edge)
+export const runtime = "nodejs";
 
 type Label = "crypto" | "offtopic" | "uncertain";
-type Out = { label: Label; score: number; reasons: string[]; version: string };
+
+type Out = {
+  label: Label;
+  score: number;
+  reasons: string[];
+  version: string;
+};
+
+type RawClassification = {
+  label?: unknown;
+  score?: unknown;
+  reasons?: unknown;
+  version?: unknown;
+};
 
 const SYS_PROMPT =
   "Você é um classificador para eventos do ecossistema de criptomoedas. " +
@@ -26,22 +38,40 @@ function userPrompt(title: string, description: string) {
   );
 }
 
-function sanitize(out: any, model: string): Out {
-  const label = (out?.label || "").toString() as Label;
+function sanitize(
+  raw: RawClassification | null | undefined,
+  model: string
+): Out {
   const allowed: Label[] = ["crypto", "offtopic", "uncertain"];
-  const okLabel = allowed.includes(label) ? label : "uncertain";
 
-  let score = Number(out?.score);
-  if (!Number.isFinite(score)) score = 0.5;
+  const rawLabel = typeof raw?.label === "string" ? raw.label : "";
+  const label: Label = allowed.includes(rawLabel as Label)
+    ? (rawLabel as Label)
+    : "uncertain";
+
+  let score =
+    typeof raw?.score === "number" && Number.isFinite(raw.score)
+      ? raw.score
+      : 0.5;
   if (score < 0) score = 0;
   if (score > 1) score = 1;
 
-  let reasons: string[] = Array.isArray(out?.reasons) ? out.reasons : [];
-  reasons = reasons.map((s) => String(s)).slice(0, 8);
+  let reasons: string[] = [];
+  if (Array.isArray(raw?.reasons)) {
+    reasons = raw!.reasons.map((item) => String(item)).slice(0, 8);
+  }
 
-  const version = String(out?.version || `${model}@json`);
+  const version =
+    typeof raw?.version === "string" && raw.version.trim().length > 0
+      ? raw.version
+      : `${model}@json`;
 
-  return { label: okLabel, score: Number(score.toFixed(4)), reasons, version };
+  return {
+    label,
+    score: Number(score.toFixed(4)),
+    reasons,
+    version,
+  };
 }
 
 export async function POST(req: Request) {
@@ -61,7 +91,9 @@ export async function POST(req: Request) {
     const provider = (process.env.AI_PROVIDER || "openai").toLowerCase();
     if (provider !== "openai") {
       return NextResponse.json(
-        { error: "AI_PROVIDER diferente de 'openai' não configurado nesta rota" },
+        {
+          error: "AI_PROVIDER diferente de 'openai' não configurado nesta rota",
+        },
         { status: 501 }
       );
     }
@@ -76,14 +108,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // JSON mode estável via Chat Completions
     const body = {
       model,
       messages: [
         { role: "system", content: SYS_PROMPT },
         { role: "user", content: userPrompt(title, description || "") },
       ],
-      // força JSON bem-formado
       response_format: { type: "json_object" },
       temperature: 0.2,
     };
@@ -105,22 +135,43 @@ export async function POST(req: Request) {
       );
     }
 
-    const data = await rsp.json();
-    const content =
-      data?.choices?.[0]?.message?.content || '{"label":"uncertain","score":0.5,"reasons":[],"version":""}';
+    const data = (await rsp.json()) as {
+      choices?: Array<{
+        message?: {
+          content?: string;
+        };
+      }>;
+    };
 
-    let parsed: any;
+    const content =
+      data?.choices?.[0]?.message?.content ||
+      '{"label":"uncertain","score":0.5,"reasons":[],"version":""}';
+
+    let parsed: unknown;
     try {
-      parsed = JSON.parse(content);
+      parsed = JSON.parse(content) as unknown;
     } catch {
-      parsed = { label: "uncertain", score: 0.5, reasons: [], version: "" };
+      parsed = {
+        label: "uncertain",
+        score: 0.5,
+        reasons: [],
+        version: "",
+      } satisfies RawClassification;
     }
 
-    const out = sanitize(parsed, model);
+    const out = sanitize(
+      typeof parsed === "object" && parsed !== null
+        ? (parsed as RawClassification)
+        : null,
+      model
+    );
+
     return NextResponse.json(out, { status: 200 });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const detail =
+      err instanceof Error ? err.message : typeof err === "string" ? err : "";
     return NextResponse.json(
-      { error: "Erro inesperado", detail: String(err?.message || err) },
+      { error: "Erro inesperado", detail },
       { status: 500 }
     );
   }
