@@ -50,6 +50,9 @@ export function RegisterComponent() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
 
+  // ✅ Somente UI: não bloqueia submit e não vai para o backend
+  const [acceptTerms, setAcceptTerms] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,13 +72,13 @@ export function RegisterComponent() {
     try {
       setIsLoading(true);
 
-      // 1) cria o usuário
+      // 1) cria o usuário (sem enviar acceptTerms)
       await registerUser({ name, email, password });
 
-      // 2) auto-login para já entrar na plataforma
+      // 2) auto-login
       await login({ email, password });
 
-      // 3) redireciona (ajuste a rota se preferir ir ao /dashboard)
+      // 3) redireciona
       router.push("/");
     } catch (err: unknown) {
       setError(getErrorMessage(err));
@@ -135,6 +138,28 @@ export function RegisterComponent() {
         />
       </div>
 
+      {/* ✅ Checkbox de Termos de Uso — apenas visual por enquanto */}
+      <div className="flex items-start gap-3">
+        <input
+          id="accept_terms"
+          type="checkbox"
+          className="mt-1 h-4 w-4"
+          checked={acceptTerms}
+          onChange={(e) => setAcceptTerms(e.target.checked)}
+        />
+        <label htmlFor="accept_terms" className="text-sm leading-5">
+          Eu li e aceito os{" "}
+          <Link href="/terms" className="underline">
+            Termos de Uso
+          </Link>{" "}
+          e a{" "}
+          <Link href="/privacy" className="underline">
+            Política de Privacidade
+          </Link>
+          .
+        </label>
+      </div>
+
       {error && <p className="text-sm text-red-500">{error}</p>}
 
       <Button
@@ -148,10 +173,7 @@ export function RegisterComponent() {
 
       <p className="mt-4 text-center text-sm">
         Já tem conta?{" "}
-        <Link
-          href="/login"
-          className="font-semibold hover:underline text-primary"
-        >
+        <Link href="/login" className="font-semibold hover:underline text-primary">
           Entrar
         </Link>
       </p>
