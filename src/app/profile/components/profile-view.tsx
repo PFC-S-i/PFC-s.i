@@ -11,6 +11,7 @@ import AccountCard from "./sections/account-card";
 import FavoritesDemo from "./sections/favorites-demo";
 import PasswordCard from "./sections/password-card";
 import { CARD } from "./lib/ui";
+import { changePassword } from "@/services/password.service";
 
 export default function ProfileView() {
   const [name, setName] = useState("");
@@ -96,7 +97,6 @@ export default function ProfileView() {
     }
   }
 
-  // submit da troca de senha (bem simples, só valida front)
   async function handlePasswordSubmit() {
     setPwdLoading(true);
     setPwdSuccess(null);
@@ -116,11 +116,10 @@ export default function ProfileView() {
         return;
       }
 
-      // aqui você poderia chamar um service ex.: updatePassword(...)
-      // await updatePassword({ currentPassword, newPassword });
+      await changePassword(currentPassword.trim(), newPassword.trim());
 
       setPwdSuccess("Senha atualizada.");
-      // limpa campos de senha
+
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");

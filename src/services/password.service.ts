@@ -1,7 +1,8 @@
+// src/services/auth.service.ts
 const API = (
   process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
 ).replace(/\/+$/, "");
- 
+
 async function tryParseJson(res: Response): Promise<unknown | null> {
   try {
     return await res.json();
@@ -24,6 +25,20 @@ function toMessage(data: unknown, fallback: string): string {
   return fallback;
 }
 
+// Helper simples para header de auth (token no localStorage) + cookies (se backend usar cookie HttpOnly)
+function authHeaders(): HeadersInit {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+  if (typeof window !== "undefined") {
+    const token =
+      localStorage.getItem("access_token") || localStorage.getItem("token");
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 export async function requestPasswordReset(
   email: string,
   signal?: AbortSignal
@@ -36,6 +51,7 @@ export async function requestPasswordReset(
     },
     body: JSON.stringify({ email: email.trim() }),
     signal,
+    credentials: "include",
   });
 
   if (!res.ok) {
@@ -66,6 +82,7 @@ export async function resetPassword(
     },
     body: JSON.stringify({ token: token.trim(), new_password: newPassword }),
     signal,
+    credentials: "include",
   });
 
   if (!res.ok) {
@@ -80,4 +97,33 @@ export async function resetPassword(
   const data = await tryParseJson(res);
   if (typeof data === "string") return data;
   return toMessage(data, "Senha redefinida com sucesso.");
+}
+
+/** --------- NOVO: alterar senha autenticado --------- */
+export async function changePassword(
+  oldPassword: string,
+  newPassword: string,
+  signal?: AbortSignal
+): Promise<void> {
+  const res = await fetch(`${API}/api/auth/change-password`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({
+      old_password: oldPassword,
+      new_password: newPassword,
+    }),
+    signal,
+    credentials: "include", // envia cookies se o backend usar sessão/cookie
+  });
+
+  // Sucesso do seu backend: 204 (No Content)
+  if (res.status === 204) return;
+
+  const data = await tryParseJson(res);
+  if (res.status === 401) {
+    throw new Error("Sua sessão expirou. Faça login novamente.");
+  }
+  if (!res.ok) {
+    throw new Error(toMessage(data, "Não foi possível alterar a senha."));
+  }
 }
