@@ -4,10 +4,6 @@
 import Image from "next/image";
 import { X, TrendingDown, TrendingUp } from "lucide-react";
 
-function cx(...c: Array<string | false | null | undefined>) {
-  return c.filter(Boolean).join(" ");
-}
-
 type Props = {
   image?: string;
   name?: string;
@@ -15,9 +11,13 @@ type Props = {
   vs: "brl" | "usd";
   price: string;
   pct24?: number | null;
-  pctLabel: string; // ex: "1,23%"
+  pctLabel: string;
   onClose: () => void;
 };
+
+function cls(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(" ");
+}
 
 export function Header({
   image,
@@ -32,7 +32,8 @@ export function Header({
   const isUp = (pct24 ?? 0) >= 0;
 
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-white/10 p-4">
+    <header className="flex items-center justify-between gap-4 border-b border-white/10 p-4">
+      {/* esquerda: avatar + nome */}
       <div className="flex items-center gap-3">
         <div className="relative h-8 w-8 overflow-hidden rounded-full bg-[#121212] grid place-items-center">
           {image ? (
@@ -51,11 +52,13 @@ export function Header({
         </div>
 
         <div>
-          <h3 className="text-lg font-semibold">
+          <h3 className="text-lg font-semibold leading-tight">
             {name ?? "Carregando…"}
-            {symbol && (
-              <span className="opacity-70"> {symbol.toUpperCase()}</span>
-            )}
+            {symbol ? (
+              <span className="ml-1 text-sm opacity-70">
+                {symbol.toUpperCase()}
+              </span>
+            ) : null}
           </h3>
           <p className="text-sm opacity-70">
             Cotação e detalhes — {vs.toUpperCase()}
@@ -63,13 +66,14 @@ export function Header({
         </div>
       </div>
 
+      {/* centro: preço + variação */}
       <div className="ml-auto flex items-center gap-3 text-sm">
         <span className="opacity-70">Preço</span>
         <strong className="tabular-nums">{price}</strong>
 
         {pct24 != null && (
           <span
-            className={cx(
+            className={cls(
               "inline-flex items-center gap-1 rounded-md px-2 py-0.5",
               isUp
                 ? "bg-emerald-500/15 text-emerald-400"
@@ -87,6 +91,7 @@ export function Header({
         )}
       </div>
 
+      {/* botão fechar */}
       <button
         onClick={onClose}
         className="rounded-lg p-2 transition-colors hover:bg-white/10"
@@ -94,6 +99,6 @@ export function Header({
       >
         <X className="h-5 w-5" />
       </button>
-    </div>
+    </header>
   );
 }

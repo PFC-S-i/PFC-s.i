@@ -3,7 +3,7 @@
 import Image, { StaticImageData } from "next/image";
 import { Linkedin } from "lucide-react";
 
-import gu from "@/gu.jpg";
+import gu from "@/gu.png";
 import eu from "@/joao.jpg";
 import moura from "@/moura.jpg";
 
