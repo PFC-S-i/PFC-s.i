@@ -9,13 +9,9 @@ import { PasswordInput } from "@/components/password-input/password-input";
 import { login } from "@/services/login.service";
 import { registerUser } from "@/services/register.service";
 
-/**
- * Extrai uma mensagem legível de um erro desconhecido (fetch/axios/FastAPI).
- * Mesmo helper do login para padronizar mensagens.
- */
+/** Extrai uma mensagem legível de um erro desconhecido (fetch/axios/FastAPI). */
 function getErrorMessage(err: unknown): string {
   const fallback = "Não foi possível criar sua conta. Tente novamente.";
-
   if (err instanceof Error && err.message) return err.message;
 
   if (typeof err === "object" && err !== null) {
@@ -27,8 +23,7 @@ function getErrorMessage(err: unknown): string {
       if (typeof data === "object" && data !== null) {
         const detail = (data as Record<string, unknown>)["detail"];
         if (typeof detail === "string") return detail;
-        if (Array.isArray(detail) && detail[0]?.msg)
-          return detail[0].msg as string;
+        if (Array.isArray(detail) && detail[0]?.msg) return detail[0].msg as string;
 
         const message = (data as Record<string, unknown>)["message"];
         if (typeof message === "string") return message;
@@ -38,7 +33,6 @@ function getErrorMessage(err: unknown): string {
     const message = (err as Record<string, unknown>)["message"];
     if (typeof message === "string") return message;
   }
-
   return fallback;
 }
 
@@ -50,8 +44,9 @@ export function RegisterComponent() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
 
-  // ✅ Somente UI: não bloqueia submit e não vai para o backend
+  // ✅ Obrigatório aceitar os termos
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [termsError, setTermsError] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +54,7 @@ export function RegisterComponent() {
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    setTermsError(null);
 
     if (!name || !email || !password || !confirm) {
       setError("Preencha todos os campos.");
@@ -68,17 +64,19 @@ export function RegisterComponent() {
       setError("As senhas não coincidem.");
       return;
     }
+    if (!acceptTerms) {
+      setTermsError("Você precisa aceitar os Termos de Uso e a Política de Privacidade para criar a conta.");
+      return;
+    }
 
     try {
       setIsLoading(true);
 
-      // 1) cria o usuário (sem enviar acceptTerms)
+      // Caso queira registrar no back que aceitou os termos:
+      // await registerUser({ name, email, password, accept_terms: true });
       await registerUser({ name, email, password });
 
-      // 2) auto-login
       await login({ email, password });
-
-      // 3) redireciona
       router.push("/");
     } catch (err: unknown) {
       setError(getErrorMessage(err));
@@ -97,7 +95,7 @@ export function RegisterComponent() {
           placeholder="Nome completo"
           icon="user"
           required
-          className="w-full rounded "
+          className="w-full rounded"
         />
       </div>
 
@@ -109,7 +107,7 @@ export function RegisterComponent() {
           placeholder="E-mail"
           icon="email"
           required
-          className="w-full rounded "
+          className="w-full rounded"
           autoComplete="email"
         />
       </div>
@@ -121,7 +119,7 @@ export function RegisterComponent() {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Senha"
           required
-          className="w-full rounded "
+          className="w-full rounded"
           autoComplete="new-password"
         />
       </div>
@@ -133,19 +131,25 @@ export function RegisterComponent() {
           onChange={(e) => setConfirm(e.target.value)}
           placeholder="Confirmar senha"
           required
-          className="w-full rounded "
+          className="w-full rounded"
           autoComplete="new-password"
         />
       </div>
 
-      {/* ✅ Checkbox de Termos de Uso — apenas visual por enquanto */}
+      {/* ✅ Termos de Uso — obrigatório */}
       <div className="flex items-start gap-3">
         <input
           id="accept_terms"
           type="checkbox"
-          className="mt-1 h-4 w-4"
+          className={`mt-1 h-4 w-4 rounded border ${termsError ? "ring-1 ring-red-500" : ""}`}
           checked={acceptTerms}
-          onChange={(e) => setAcceptTerms(e.target.checked)}
+          onChange={(e) => {
+            setAcceptTerms(e.target.checked);
+            if (e.target.checked) setTermsError(null);
+          }}
+          required
+          aria-invalid={!!termsError}
+          aria-describedby={termsError ? "terms-error" : undefined}
         />
         <label htmlFor="accept_terms" className="text-sm leading-5">
           Eu li e aceito os{" "}
@@ -160,13 +164,24 @@ export function RegisterComponent() {
         </label>
       </div>
 
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {termsError && (
+        <p id="terms-error" className="text-xs text-red-500 -mt-2" aria-live="polite">
+          {termsError}
+        </p>
+      )}
+
+      {error && (
+        <p className="text-sm text-red-500" aria-live="polite">
+          {error}
+        </p>
+      )}
 
       <Button
         variant="default"
         type="submit"
-        disabled={isLoading}
+        disabled={isLoading || !acceptTerms}
         className="w-full px-4 py-2"
+        title={!acceptTerms ? "Marque a caixa de Termos de Uso para criar a conta" : undefined}
       >
         {isLoading ? "Criando conta..." : "Criar conta"}
       </Button>
