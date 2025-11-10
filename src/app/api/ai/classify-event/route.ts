@@ -3,13 +3,7 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 
 type Label = "crypto" | "offtopic" | "uncertain";
-
-type Out = {
-  label: Label;
-  score: number;
-  reasons: string[];
-  version: string;
-};
+type Out = { label: Label; score: number; reasons: string[]; version: string };
 
 type RawClassification = {
   label?: unknown;
@@ -38,10 +32,7 @@ function userPrompt(title: string, description: string) {
   );
 }
 
-function sanitize(
-  raw: RawClassification | null | undefined,
-  model: string
-): Out {
+function sanitize(raw: RawClassification | null | undefined, model: string): Out {
   const allowed: Label[] = ["crypto", "offtopic", "uncertain"];
 
   const rawLabel = typeof raw?.label === "string" ? raw.label : "";
@@ -58,7 +49,7 @@ function sanitize(
 
   let reasons: string[] = [];
   if (Array.isArray(raw?.reasons)) {
-    reasons = raw!.reasons.map((item) => String(item)).slice(0, 8);
+    reasons = (raw!.reasons as unknown[]).map((item) => String(item)).slice(0, 8);
   }
 
   const version =
@@ -74,6 +65,14 @@ function sanitize(
   };
 }
 
+// Em raros casos o modelo pode devolver ```json ... ```
+// Isso remove crases e extrai o primeiro bloco { ... } válido.
+function extractJson(content: string): string {
+  const clean = content.replace(/```json|```/g, "").trim();
+  const m = clean.match(/\{[\s\S]*\}$/);
+  return m ? m[0] : clean;
+}
+
 export async function POST(req: Request) {
   try {
     const { title, description } = (await req.json()) as {
@@ -82,30 +81,24 @@ export async function POST(req: Request) {
     };
 
     if (!title || typeof title !== "string") {
-      return NextResponse.json(
-        { error: "title é obrigatório (string)" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "title é obrigatório (string)" }, { status: 400 });
     }
 
     const provider = (process.env.AI_PROVIDER || "openai").toLowerCase();
     if (provider !== "openai") {
       return NextResponse.json(
-        {
-          error: "AI_PROVIDER diferente de 'openai' não configurado nesta rota",
-        },
+        { error: "AI_PROVIDER diferente de 'openai' não configurado nesta rota" },
         { status: 501 }
       );
     }
 
-    const base = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
+    const base = (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/+$/, "");
     const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
     const key = process.env.OPENAI_API_KEY;
+
     if (!key) {
-      return NextResponse.json(
-        { error: "OPENAI_API_KEY não configurada" },
-        { status: 500 }
-      );
+      console.error("[AI] Faltando OPENAI_API_KEY no ambiente.");
+      return NextResponse.json({ error: "OPENAI_API_KEY não configurada" }, { status: 500 });
     }
 
     const body = {
@@ -118,61 +111,65 @@ export async function POST(req: Request) {
       temperature: 0.2,
     };
 
-    const rsp = await fetch(`${base}/chat/completions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+    let rsp: Response;
+    try {
+      rsp = await fetch(`${base}/chat/completions`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+        body: JSON.stringify(body),
+      });
+    } catch (netErr) {
+      console.error("[AI] Erro de rede ao chamar OpenAI:", netErr);
+      return NextResponse.json(
+        { error: "Falha de rede ao chamar o provedor de IA" },
+        { status: 502 }
+      );
+    }
 
     if (!rsp.ok) {
-      const detail = await rsp.text();
+      let detail: unknown = null;
+      try {
+        detail = await rsp.json();
+      } catch {
+        try {
+          detail = await rsp.text();
+        } catch {
+          detail = null;
+        }
+      }
+      console.error("[AI] HTTP não-OK da OpenAI:", rsp.status, detail);
+      // Propaga como 502 para o cliente entender que é erro do provedor
       return NextResponse.json(
-        { error: "Falha na chamada de IA", detail },
+        { error: "Falha na chamada de IA", status: rsp.status, detail },
         { status: 502 }
       );
     }
 
     const data = (await rsp.json()) as {
-      choices?: Array<{
-        message?: {
-          content?: string;
-        };
-      }>;
+      choices?: Array<{ message?: { content?: string | null } }>;
     };
 
-    const content =
-      data?.choices?.[0]?.message?.content ||
+    const rawContent =
+      data?.choices?.[0]?.message?.content ??
       '{"label":"uncertain","score":0.5,"reasons":[],"version":""}';
 
-    let parsed: unknown;
+    let parsed: RawClassification | null = null;
     try {
-      parsed = JSON.parse(content) as unknown;
-    } catch {
-      parsed = {
-        label: "uncertain",
-        score: 0.5,
-        reasons: [],
-        version: "",
-      } satisfies RawClassification;
+      parsed = JSON.parse(extractJson(rawContent)) as RawClassification;
+    } catch (e) {
+      console.error("[AI] JSON inválido recebido do modelo. Conteúdo:", rawContent, e);
+      parsed = { label: "uncertain", score: 0.5, reasons: [], version: "" };
     }
 
-    const out = sanitize(
-      typeof parsed === "object" && parsed !== null
-        ? (parsed as RawClassification)
-        : null,
-      model
-    );
-
+    const out = sanitize(parsed, model);
     return NextResponse.json(out, { status: 200 });
   } catch (err: unknown) {
-    const detail =
-      err instanceof Error ? err.message : typeof err === "string" ? err : "";
-    return NextResponse.json(
-      { error: "Erro inesperado", detail },
-      { status: 500 }
-    );
+    const msg = err instanceof Error ? err.message : String(err ?? "");
+    console.error("[AI] Erro inesperado na rota /classify-event:", msg, err);
+    return NextResponse.json({ error: "Erro inesperado", detail: msg }, { status: 500 });
   }
 }

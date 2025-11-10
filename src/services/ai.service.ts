@@ -9,11 +9,15 @@ export async function classifyEventLocalAPI(
   const res = await fetch("/api/ai/classify-event", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    cache: "no-store",
     body: JSON.stringify({ title, description }),
   });
+
   if (!res.ok) {
-    // fallback conservador
-    return { label: "uncertain", score: 0.5, reasons: ["ai_error"], version: "local@error" };
+    // Lança para o caller (post-card) poder fazer retry/backoff.
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `IA HTTP ${res.status}`);
   }
+
   return (await res.json()) as EventAI;
 }
