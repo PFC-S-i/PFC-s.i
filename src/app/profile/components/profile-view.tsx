@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { LogOut, UserX } from "lucide-react";
 import { Button } from "@/components/button";
-import { fetchMe, updateMe } from "@/services/user.service";
+import { fetchMe, updateMe, deleteMe } from "@/services/user.service";
 import { getAuthToken } from "@/services/login.service";
 import { useAuth } from "@/context/auth.context";
 import { getErrMsg } from "./lib/utils";
@@ -14,6 +15,8 @@ import { CARD } from "./lib/ui";
 import { changePassword } from "@/services/password.service";
 
 export default function ProfileView() {
+  const router = useRouter();
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [origName, setOrigName] = useState("");
@@ -34,8 +37,10 @@ export default function ProfileView() {
   const [pwdError, setPwdError] = useState<string | null>(null);
   const [pwdLoading, setPwdLoading] = useState(false);
 
-  // modal de exclusão (apenas visual)
+  // exclusão
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const { logout } = useAuth();
 
@@ -133,6 +138,24 @@ export default function ProfileView() {
     }
   }
 
+  async function confirmDeleteAccount() {
+    try {
+      setDeleteLoading(true);
+      setDeleteError(null);
+
+      await deleteMe(); // 🔗 integração real com o backend
+
+      // encerra sessão no front e redireciona
+      logout();
+      router.push("/?account_deleted=1");
+    } catch (err) {
+      setDeleteError(getErrMsg(err) || "Falha ao excluir a conta.");
+    } finally {
+      setDeleteLoading(false);
+      setDeleteOpen(false);
+    }
+  }
+
   // fecha modal com ESC
   useEffect(() => {
     if (!deleteOpen) return;
@@ -200,7 +223,7 @@ export default function ProfileView() {
         </div>
       </div>
 
-      {/* Modal de confirmação de exclusão — apenas visual */}
+      {/* Modal de confirmação */}
       {deleteOpen && (
         <div
           role="dialog"
@@ -217,25 +240,26 @@ export default function ProfileView() {
               Excluir conta?
             </h2>
             <p className="mt-2 text-sm text-gray-400">
-              Esta ação é <span className="text-red-400">permanente</span> e
-              não poderá ser desfeita. Tem certeza de que deseja prosseguir?
+              Esta ação é <span className="text-red-400">permanente</span> e não poderá ser desfeita.
             </p>
 
+            {deleteError && (
+              <p className="mt-3 text-sm text-red-400" aria-live="polite">
+                {deleteError}
+              </p>
+            )}
+
             <div className="mt-6 flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+              <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={deleteLoading}>
                 Cancelar
               </Button>
               <Button
                 variant="destructive"
                 className="flex items-center gap-2"
-                onClick={() => {
-                  // Apenas visual: aqui você fecharia o modal
-                  // e, futuramente, chamaria a API de exclusão.
-                  setDeleteOpen(false);
-                }}
+                onClick={confirmDeleteAccount}
+                disabled={deleteLoading}
               >
-                <UserX size={16} />
-                Excluir conta
+                {deleteLoading ? "Excluindo..." : (<><UserX size={16} /> Excluir conta</>)}
               </Button>
             </div>
           </div>
