@@ -4,8 +4,9 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 
 import { EmptyState } from "@/app/forum/components/empty-state";
 import { NewPostModal } from "@/app/forum/components/new-post-modal";
-import { PostCard } from "@/app/forum/components/post-card";
+// import { PostCard } from "@/app/forum/components/post-card"; // não precisa mais aqui
 import type { ForumPost } from "@/types/forum";
+import { PostList } from "@/app/forum/components/post-list";
 import { Button } from "@/components";
 import {
   createEvent,
@@ -310,15 +311,19 @@ export default function ForumClient() {
           <div>
             <h1 className="text-2xl md:text-3xl font-semibold">Fórum</h1>
             <p className="opacity-80 text-sm md:text-base mt-1">
-              Compartilhe e veja notícias relevantes da comunidade sobre o mundo cripto.
+              Compartilhe e veja notícias relevantes da comunidade sobre o
+              mundo cripto.
             </p>
             <div
               role="alert"
               className="mt-3 flex items-center gap-2 text-xs md:text-sm text-yellow-300"
             >
-              <span aria-hidden className="text-base md:text-lg">⚠️</span>
+              <span aria-hidden className="text-base md:text-lg">
+                ⚠️
+              </span>
               <p className="m-0">
-                Todos os posts são validados por IA para manter o conteúdo limpo e confiável.
+                Todos os posts são validados por IA para manter o conteúdo
+                limpo e confiável.
               </p>
             </div>
           </div>
@@ -378,20 +383,8 @@ export default function ForumClient() {
                 }}
               />
             ) : (
-              <div className="space-y-4">
-                {ordered.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    meId={me.id}
-                    post={post}
-                    canEdit={post.user_id === me.id}
-                    onEdit={handleEdit}
-                    canDelete={post.user_id === me.id}
-                    onDelete={requestDelete}
-                    deleting={deletingId === post.id}
-                  />
-                ))}
-              </div>
+              // aqui entra a lista paginada
+              <PostList posts={ordered} />
             )}
           </>
         )}

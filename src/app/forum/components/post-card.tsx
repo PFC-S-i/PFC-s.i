@@ -435,7 +435,7 @@ export function PostCard({
       : "bg-amber-500/10 text-amber-400";
   const badgeText =
     ai === "crypto"
-      ? "Informação validada"
+      ? "Informação validada por IA"
       : ai === "offtopic"
       ? "Informação considerada inválida"
       : "Em análise";
