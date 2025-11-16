@@ -74,7 +74,7 @@ export function About() {
       } catch (e: unknown) {
         if (!cancelled) {
           setOptError(
-            e instanceof Error ? e.message : "Falha ao carregar Top 20"
+            e instanceof Error ? e.message : "Falha ao carregar"
           );
           setOptions([]);
         }
@@ -312,7 +312,7 @@ export function About() {
   return (
     <section id="sobre" className="py-20 max-w-6xl mx-auto">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-        <h2 className="text-3xl font-bold">Top 20 por Market Cap</h2>
+        <h2 className="text-3xl font-bold">Criptomoedas por Valor de Mercado (Top 20)</h2>
 
         <div className="flex items-center gap-3">
           {/* Filtro (Top 20) */}

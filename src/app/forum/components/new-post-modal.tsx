@@ -75,6 +75,9 @@ export function NewPostModal({
     defaultValues: DEFAULT_VALUES,
   });
 
+  // erro de moderação da IA (bloqueio)
+  const [aiError, setAiError] = useState<string | null>(null);
+
   // Preenche quando abrir em modo edição
   useEffect(() => {
     if (open) reset({ ...DEFAULT_VALUES, ...initialData });
@@ -99,11 +102,48 @@ export function NewPostModal({
   const handleClose = useCallback(() => {
     reset(DEFAULT_VALUES);
     setCoinOptions([]);
+    setAiError(null);
     onClose();
   }, [onClose, reset]);
 
   const onValid = useCallback(
     async (data: NewPostForm) => {
+      setAiError(null);
+
+      // 1) IA antes de criar o post
+      let ai;
+      try {
+        ai = await classifyEventLocalAPI(data.title, data.description);
+
+        const isOffTopic = ai.label !== "crypto";
+        const shouldBlock = ai.blocked || isOffTopic;
+
+        if (shouldBlock) {
+          const reasons =
+            (ai.block_reasons && ai.block_reasons.length > 0
+              ? ai.block_reasons
+              : ai.reasons) ?? [];
+
+          const baseMsg = ai.blocked
+            ? "Seu post não foi aprovado na validação com IA por violar as diretrizes do fórum (conteúdo ofensivo, ilegal ou inadequado)."
+            : "Seu post não foi aprovado na validação com IA por não estar relacionado ao ecossistema de criptomoedas.";
+
+          const extra =
+            reasons.length > 0 ? ` Motivo: ${reasons.join(" | ")}` : "";
+
+          setAiError(baseMsg + extra);
+          // ❌ não chama onConfirm, não fecha modal
+          return;
+        }
+      } catch {
+        // Falha na IA — aqui optei por NÃO enviar o post.
+        setAiError(
+          "Não foi possível validar seu post com a moderação automática. Tente novamente em instantes."
+        );
+        return;
+      }
+
+      // 2) Se passou na IA, cria o post normalmente
       const nowIso = new Date().toISOString();
 
       const result = await Promise.resolve(
@@ -129,9 +169,8 @@ export function NewPostModal({
 
       handleClose();
 
-      // classifica em segundo plano (não bloqueia UX)
+      // 3) Como já temos o resultado da IA, reaproveitamos para badge/evento
       try {
-        const ai = await classifyEventLocalAPI(data.title, data.description);
         const key = makeAiKey(createdId, data.title, data.description);
         saveAiBadge(key, ai.label);
         window.dispatchEvent(
@@ -264,6 +303,13 @@ export function NewPostModal({
               void submit();
             }}
           >
+            {/* aviso de moderação da IA */}
+            {aiError && (
+              <div className="mb-3 rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                {aiError}
+              </div>
+            )}
+
             {/* Título */}
             <label className="mb-1 block text-sm font-medium" htmlFor="title">
               Título

@@ -1,6 +1,14 @@
 // src/services/ai.service.ts
 type Label = "crypto" | "offtopic" | "uncertain";
-export type EventAI = { label: Label; score: number; reasons: string[]; version: string };
+
+export type EventAI = {
+  label: Label;
+  score: number;
+  reasons: string[];
+  blocked: boolean;
+  block_reasons: string[];
+  version: string;
+};
 
 export async function classifyEventLocalAPI(
   title: string,
@@ -10,11 +18,10 @@ export async function classifyEventLocalAPI(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     cache: "no-store",
-    body: JSON.stringify({ title, description }),
+    body: JSON.stringify({ title, description }), // mantém sua interface atual
   });
 
   if (!res.ok) {
-    // Lança para o caller (post-card) poder fazer retry/backoff.
     const text = await res.text().catch(() => "");
     throw new Error(text || `IA HTTP ${res.status}`);
   }

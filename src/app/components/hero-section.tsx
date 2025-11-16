@@ -35,7 +35,7 @@ export function HeroSection() {
           <p className="text-base md:text-xl text-white/80">
             Aqui, você encontra notícias confiáveis, preços em tempo real e conteúdos educativos, tudo em um só lugar. <br></br>
             Crie sua conta, personalize seus favoritos e acompanhe um painel simples e direto pra entender o que realmente importa no mercado cripto. <br></br>
-            Sem complicação, sem ruído: aprenda, compare e tome as melhores decisões!💡
+            Sem complicação, sem ruído: aprenda, compare e tome as melhores decisões!
           </p>
         </div>
       </div>
