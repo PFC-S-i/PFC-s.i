@@ -62,10 +62,9 @@ export default function NewsPage() {
   return (
     <main className="py-8">
       <header className="mb-6">
-        <h1 className="text-3xl font-extrabold">Notícias de Criptomoedas</h1>
+        <h1 className="text-3xl font-extrabold">Fique por dentro do que move o mercado cripto</h1>
         <p className="text-muted-foreground">
-          Acompanhe aqui as últimas notícias sobre criptomoedas de várias
-          fontes.
+          As principais novidades do mercado cripto, reunidas em um só lugar.
         </p>
       </header>
 

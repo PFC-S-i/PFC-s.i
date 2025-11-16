@@ -310,8 +310,17 @@ export default function ForumClient() {
           <div>
             <h1 className="text-2xl md:text-3xl font-semibold">Fórum</h1>
             <p className="opacity-80 text-sm md:text-base mt-1">
-              Compartilhe e discuta notícias de cripto com a comunidade.
+              Compartilhe e veja notícias relevantes da comunidade sobre o mundo cripto.
             </p>
+            <div
+              role="alert"
+              className="mt-3 flex items-center gap-2 text-xs md:text-sm text-yellow-300"
+            >
+              <span aria-hidden className="text-base md:text-lg">⚠️</span>
+              <p className="m-0">
+                Todos os posts são validados por IA para manter o conteúdo limpo e confiável.
+              </p>
+            </div>
           </div>
 
           {/* Desabilita o botão se não estiver logado */}

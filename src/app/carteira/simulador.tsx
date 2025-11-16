@@ -404,11 +404,33 @@ export default function Simulador() {
   const hasInput = userText.trim().length > 0;
   const baseBits = WORDSET_TO_BITS[wordCount];
 
-  const humanBits = useMemo(() => estimateHumanEntropy(userText), [userText]);
+  const humanBits = useMemo(
+    () => estimateHumanEntropy(userText),
+    [userText]
+  );
 
-  const totalBits = useMemo(() => baseBits + humanBits, [baseBits, humanBits]);
+  const passphraseBits = useMemo(
+    () => estimateHumanEntropy(passphrase),
+    [passphrase]
+  );
 
-  const totalBitsForVerdict = useMemo(() => humanBits, [humanBits]);
+  // entropia "humana" total = frase + passphrase
+  const totalHumanBits = useMemo(
+    () => humanBits + passphraseBits,
+    [humanBits, passphraseBits]
+  );
+
+  // total informativo = entropia base do BIP39 + entropia humana
+  const totalBits = useMemo(
+    () => baseBits + totalHumanBits,
+    [baseBits, totalHumanBits]
+  );
+
+  // o veredito considera só a parte humana (frase + passphrase)
+  const totalBitsForVerdict = useMemo(
+    () => totalHumanBits,
+    [totalHumanBits]
+  );
 
   // tempo estimado
   const crackSeconds = useMemo(() => {
@@ -445,15 +467,6 @@ export default function Simulador() {
     };
   }, [userText, passphrase, hasInput]);
 
-  async function copy(text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-      alert("Copiado!");
-    } catch {
-      alert("Não foi possível copiar automaticamente.");
-    }
-  }
-
   return (
     <div className="mx-auto max-w-4xl p-6">
       {/* intro */}
@@ -468,7 +481,19 @@ export default function Simulador() {
           <strong>caminhos de derivação</strong> de carteiras. O uso recomendado
           é <em>offline</em> — baixe a página, desconecte e{" "}
           <u>nunca cole sua seed real</u> em sites. Nosso simulador é
-          educacional e não substitui práticas seguras de custódia.
+          educacional e foi{" "}
+          <strong>
+            inspirado na ferramenta original de Ian Coleman, disponível em{" "}
+            <a
+              href="https://iancoleman.io/bip39/"
+              target="_blank"
+              rel="noreferrer"
+              className="underline hover:text-neutral-100"
+            >
+              iancoleman.io/bip39
+            </a>
+          </strong>
+          , e não substitui práticas seguras de custódia.
         </p>
         <div className="mt-4">
           <VideoPlayer
@@ -484,7 +509,7 @@ export default function Simulador() {
           <strong>Aviso:</strong> não cole sua seed real — use exemplos
           fictícios. Estimamos a entropia humana e o <em>tempo de quebra</em>{" "}
           (assumindo {GUESSES_PER_SEC.toLocaleString("pt-BR")} palpites/seg) e
-          mostramos a seed BIP39 derivada.
+          mostramos a seed BIP39 derivada apenas para fins educacionais.
         </p>
       </div>
 
@@ -571,13 +596,6 @@ export default function Simulador() {
             </div>
             <div className="mt-3 flex gap-2">
               <button
-                className="rounded-lg bg-white/10 px-3 py-2 text-sm hover:bg-white/15 disabled:opacity-50"
-                onClick={() => copy(seedHex)}
-                disabled={!seedHex}
-              >
-                Copiar
-              </button>
-              <button
                 className="rounded-lg bg-white/10 px-3 py-2 text-sm hover:bg-white/15"
                 onClick={() => setSeedHex("")}
               >
@@ -588,7 +606,9 @@ export default function Simulador() {
               Seed derivada do texto informado (como “mnemonic”), normalizado
               NFKD, com sal{" "}
               <code className="mx-1">&quot;mnemonic&quot; + passphrase</code> e
-              2048 iterações PBKDF2-HMAC-SHA512 (BIP39).
+              2048 iterações PBKDF2-HMAC-SHA512 (BIP39). Por segurança, não
+              oferecemos botão de cópia automática — se precisar, selecione o
+              texto manualmente.
             </p>
           </div>
         </div>
@@ -616,10 +636,28 @@ export default function Simulador() {
 
                 <div className="flex items-center justify-between">
                   <dt className="text-sm text-neutral-300">
-                    Entropia humana (estimada)
+                    Entropia humana (frase)
                   </dt>
                   <dd className="text-sm font-semibold">
                     {humanBits.toFixed(2)} bits
+                  </dd>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <dt className="text-sm text-neutral-300">
+                    Entropia humana extra (passphrase)
+                  </dt>
+                  <dd className="text-sm font-semibold">
+                    {passphraseBits.toFixed(2)} bits
+                  </dd>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <dt className="text-sm text-neutral-300">
+                    Total humano (frase + passphrase)
+                  </dt>
+                  <dd className="text-sm font-semibold">
+                    {totalHumanBits.toFixed(2)} bits
                   </dd>
                 </div>
 

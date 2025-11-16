@@ -1,14 +1,16 @@
+import type { Metadata } from "next";
+
 import { AuthProvider } from "@/context/auth.context";
 import "./globals.css";
 import Header from "@/components/header/header";
 import Footer from "@/components/footer/footer";
 import { Toaster } from "@/components";
 
-export const metadata = {
-  title: "infoCrypto",
-  description: "Notícias do mundo da cripto e cotações atualizadas",
+export const metadata: Metadata = {
+  title: "InfoCrypto",
+  description: "Notícias do mundo cripto e cotações atualizadas",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/logo.png", // arquivo em /public/logo.png
   },
 };
 

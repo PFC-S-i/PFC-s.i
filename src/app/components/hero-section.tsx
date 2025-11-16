@@ -33,12 +33,9 @@ export function HeroSection() {
             ajudar
           </h2>
           <p className="text-base md:text-xl text-white/80">
-            A infoCrypto reúne, em um só lugar, notícias de fontes confiáveis,
-            preços em tempo real e conteúdos educativos que explicam do básico
-            ao avançado. Crie sua conta, personalize seus favoritos e acompanhe
-            um painel simples e direto para entender o que realmente importa no
-            mercado. Sem complicação, sem ruído: aprenda, compare e decida
-            melhor.
+            Aqui, você encontra notícias confiáveis, preços em tempo real e conteúdos educativos, tudo em um só lugar. <br></br>
+            Crie sua conta, personalize seus favoritos e acompanhe um painel simples e direto pra entender o que realmente importa no mercado cripto. <br></br>
+            Sem complicação, sem ruído: aprenda, compare e tome as melhores decisões!💡
           </p>
         </div>
       </div>
