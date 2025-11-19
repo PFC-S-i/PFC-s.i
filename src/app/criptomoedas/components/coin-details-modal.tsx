@@ -62,6 +62,7 @@ export default function CoinDetailsModal({
   const timeFmt = makeTimeFmt();
 
   const m: MarketData = (market ?? {}) as MarketData;
+  console.log("market details", market);
 
   const img = resolveImageSrc(m.image, initial?.image);
   const name = m.name ?? initial?.name ?? "Carregando…";

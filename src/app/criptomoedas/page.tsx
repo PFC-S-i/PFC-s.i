@@ -25,20 +25,35 @@ export default function CriptomoedasPage() {
   );
 
   return (
-    <main className="px-4 md:px-10 lg:px-20 xl:px-32 py-10 text-gray-200">
-      <h1 className="text-4xl font-semibold mb-8">Criptomoedas</h1>
+    <main className="px-4 sm:px-6 lg:px-20 xl:px-32 py-8 sm:py-10 text-gray-200">
+      <h1 className="text-2xl sm:text-4xl font-semibold mb-4 sm:mb-8">
+        Criptomoedas
+      </h1>
 
-      <div className="flex items-center justify-between mb-5 gap-4">
-        <h2 className="text-xl font-medium opacity-90">Principais</h2>
+      {/* título + busca responsivos */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
+        <h2 className="text-lg sm:text-xl font-medium opacity-90">
+          Principais
+        </h2>
+
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar"
-          className="w-60 rounded-xl bg-[#1B1B1B] border border-white/10 px-4 py-2 outline-none focus:ring-2 focus:ring-white/20"
+          placeholder="Buscar criptomoeda"
+          className="
+            w-full sm:w-64
+            rounded-xl bg-[#1B1B1B]
+            border border-white/10
+            px-4 py-2
+            outline-none
+            focus:ring-2 focus:ring-white/20
+            text-sm sm:text-base
+          "
         />
       </div>
 
-      <div className="grid w-full gap-2">
+      <div className="w-full space-y-2">
+        {/* header só em telas médias pra cima (no mobile vamos usar card) */}
         <MarketTableHeader />
 
         {loading && (
@@ -90,7 +105,7 @@ export default function CriptomoedasPage() {
         }
       />
 
-      <div className="mt-14 h-px w-full bg-white/20" />
+      <div className="mt-10 sm:mt-14 h-px w-full bg-white/20" />
     </main>
   );
 }

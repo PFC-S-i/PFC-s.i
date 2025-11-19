@@ -7,8 +7,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button, Input } from "@/components";
 import { PasswordInput } from "@/components/password-input/password-input";
-import { getErrorMessage } from "@/services/login.service"; // só reaproveitamos o parser de erro
+import { getErrorMessage } from "@/services/login.service";
 import { useAuth } from "@/context/auth.context";
+import { loginSchema } from "@/app/schemas/login.schema";
 
 function LoginComponent() {
   const router = useRouter();
@@ -24,21 +25,30 @@ function LoginComponent() {
     e.preventDefault();
     setError(null);
 
-    if (!email || !password) {
-      setError("Informe e-mail e senha.");
+    // 1) Validação com Zod (frontend)
+    const trimmedEmail = email.trim();
+    const result = loginSchema.safeParse({
+      email: trimmedEmail,
+      password,
+    });
+
+    if (!result.success) {
+      // pega a primeira mensagem de erro amigável do schema
+      const firstIssue = result.error.issues[0];
+      setError(firstIssue.message || "Revise os dados informados.");
       return;
     }
 
     try {
       setIsLoading(true);
-      await signIn(email.trim(), password); // <- chama o CONTEXTO (atualiza estado na hora)
-      // Se tiver páginas Server Components que dependem de auth por cookie/headers,
-      // você pode descomentar a linha abaixo:
-      // router.refresh();
+
+      // 2) Chamada ao backend (pode retornar erro amigável via getErrorMessage)
+      await signIn(trimmedEmail, password);
 
       const next = params.get("next") || "/";
       router.push(next);
     } catch (err: unknown) {
+      // 3) Mensagem amigável vinda do backend
       setError(getErrorMessage(err));
     } finally {
       setIsLoading(false);

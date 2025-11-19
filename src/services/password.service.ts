@@ -1,4 +1,5 @@
-// src/services/auth.service.ts
+// src/services/password.service.ts
+
 const API = (
   process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
 ).replace(/\/+$/, "");
@@ -10,6 +11,7 @@ async function tryParseJson(res: Response): Promise<unknown | null> {
     return null;
   }
 }
+
 function toMessage(data: unknown, fallback: string): string {
   if (typeof data === "string") return data;
   if (data && typeof data === "object") {
@@ -31,11 +33,17 @@ function authHeaders(): HeadersInit {
     "Content-Type": "application/json",
     Accept: "application/json",
   };
+
   if (typeof window !== "undefined") {
+    // 🔧 AQUI O AJUSTE: procurar também por "auth_token"
     const token =
-      localStorage.getItem("access_token") || localStorage.getItem("token");
+      localStorage.getItem("auth_token") || // principal
+      localStorage.getItem("access_token") ||
+      localStorage.getItem("token");
+
     if (token) headers.Authorization = `Bearer ${token}`;
   }
+
   return headers;
 }
 
@@ -99,7 +107,7 @@ export async function resetPassword(
   return toMessage(data, "Senha redefinida com sucesso.");
 }
 
-/** --------- NOVO: alterar senha autenticado --------- */
+// alterar senha autenticado
 export async function changePassword(
   oldPassword: string,
   newPassword: string,

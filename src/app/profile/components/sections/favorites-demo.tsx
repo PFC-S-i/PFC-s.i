@@ -1,4 +1,3 @@
-// src/app/profile/components/favorites.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -15,6 +14,7 @@ type Market = {
   image: string;
   current_price: number | null;
   price_change_percentage_24h: number | null;
+  market_cap_rank: number | null;
 };
 
 function FavoriteHeader() {
@@ -39,11 +39,24 @@ function FavoriteRow({ fav }: { fav: Fav }) {
             <span className="text-xs opacity-60 shrink-0">
               #{fav.rank ?? "—"}
             </span>
-            <div className="min-w-0">
-              <div className="font-medium truncate">{fav.name}</div>
-              <div className="text-xs opacity-60">{fav.symbol}</div>
+
+            {/* imagem + nome + símbolo, igual ao MarketRow */}
+            <div className="flex items-center gap-3 min-w-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={fav.image}
+                alt={fav.name}
+                className="h-6 w-6 rounded-full"
+                loading="lazy"
+                decoding="async"
+              />
+              <div className="min-w-0">
+                <div className="font-medium truncate">{fav.name}</div>
+                <div className="text-xs opacity-60 truncate">{fav.symbol}</div>
+              </div>
             </div>
           </div>
+
           <button
             className="p-2 rounded-lg opacity-80 cursor-default"
             aria-label="Favorito"
@@ -70,7 +83,15 @@ function FavoriteRow({ fav }: { fav: Fav }) {
         <div className="opacity-80">{fav.rank ?? "—"}</div>
 
         <div className="flex items-center gap-3">
-          {/* Se quiser exibir imagem no futuro, adicione um <img /> aqui */}
+          {/* imagem + nome + símbolo, igual ao MarketRow */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={fav.image}
+            alt={fav.name}
+            className="h-6 w-6 rounded-full"
+            loading="lazy"
+            decoding="async"
+          />
           <div className="flex flex-col">
             <span className="font-medium">{fav.name}</span>
             <span className="text-xs opacity-60">{fav.symbol}</span>
@@ -140,9 +161,10 @@ export default function Favorites() {
         if (cancelled) return;
 
         // 3) Monta os favoritos para a UI do profile
-        const mapped: Fav[] = markets.map((m) => ({
+        const mapped: Fav[] = markets.map((m, idx) => ({
           id: m.id,
-          rank: null, // API local não retornou rank; usamos "—" na UI
+          rank:
+            typeof m.market_cap_rank === "number" ? m.market_cap_rank : idx + 1,
           name: m.name,
           symbol: m.symbol?.toUpperCase?.() ?? m.symbol,
           image: m.image || "",
@@ -150,7 +172,6 @@ export default function Favorites() {
           change24h: m.price_change_percentage_24h ?? 0,
         }));
 
-        // Ordena alfabeticamente (opcional; remova se quiser manter ordem original)
         mapped.sort((a, b) => a.name.localeCompare(b.name));
 
         setItems(mapped);

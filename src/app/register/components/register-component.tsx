@@ -1,3 +1,4 @@
+// src/app/register/components/register-component.tsx
 "use client";
 
 import { FormEvent, useState } from "react";
@@ -8,6 +9,7 @@ import { Button, Input } from "@/components";
 import { PasswordInput } from "@/components/password-input/password-input";
 import { login } from "@/services/login.service";
 import { registerUser } from "@/services/register.service";
+import { registerSchema } from "@/app/schemas/register.schema";
 
 /** Extrai uma mensagem legível de um erro desconhecido (fetch/axios/FastAPI). */
 function getErrorMessage(err: unknown): string {
@@ -23,7 +25,8 @@ function getErrorMessage(err: unknown): string {
       if (typeof data === "object" && data !== null) {
         const detail = (data as Record<string, unknown>)["detail"];
         if (typeof detail === "string") return detail;
-        if (Array.isArray(detail) && detail[0]?.msg) return detail[0].msg as string;
+        if (Array.isArray(detail) && detail[0]?.msg)
+          return detail[0].msg as string;
 
         const message = (data as Record<string, unknown>)["message"];
         if (typeof message === "string") return message;
@@ -44,7 +47,7 @@ export function RegisterComponent() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
 
-  // ✅ Obrigatório aceitar os termos
+  // Termos (controle manual)
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [termsError, setTermsError] = useState<string | null>(null);
 
@@ -56,27 +59,38 @@ export function RegisterComponent() {
     setError(null);
     setTermsError(null);
 
-    if (!name || !email || !password || !confirm) {
-      setError("Preencha todos os campos.");
+    // 1) Validação com Zod (sem termos)
+    const parsed = registerSchema.safeParse({
+      name: name.trim(),
+      email: email.trim(),
+      password,
+      confirm,
+    });
+
+    if (!parsed.success) {
+      const firstIssue = parsed.error.issues[0];
+      setError(firstIssue?.message || "Revise os dados informados.");
       return;
     }
-    if (password !== confirm) {
-      setError("As senhas não coincidem.");
-      return;
-    }
+
+    // 2) Validação manual dos Termos
     if (!acceptTerms) {
-      setTermsError("Você precisa aceitar os Termos de Uso e a Política de Privacidade para criar a conta.");
+      setTermsError(
+        "Você precisa aceitar os Termos de Uso e a Política de Privacidade para criar a conta."
+      );
       return;
     }
 
     try {
       setIsLoading(true);
 
-      // Caso queira registrar no back que aceitou os termos:
-      // await registerUser({ name, email, password, accept_terms: true });
-      await registerUser({ name, email, password });
+      await registerUser({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+      });
 
-      await login({ email, password });
+      await login({ email: email.trim(), password });
       router.push("/");
     } catch (err: unknown) {
       setError(getErrorMessage(err));
@@ -86,7 +100,7 @@ export function RegisterComponent() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="w-full grid gap-4">
+    <form onSubmit={onSubmit} className="w-full grid gap-4" noValidate>
       <div className="w-full">
         <Input
           type="text"
@@ -136,12 +150,14 @@ export function RegisterComponent() {
         />
       </div>
 
-      {/* ✅ Termos de Uso — obrigatório */}
+      {/* Termos de Uso — obrigatório */}
       <div className="flex items-start gap-3">
         <input
           id="accept_terms"
           type="checkbox"
-          className={`mt-1 h-4 w-4 rounded border ${termsError ? "ring-1 ring-red-500" : ""}`}
+          className={`mt-1 h-4 w-4 rounded border ${
+            termsError ? "ring-1 ring-red-500" : ""
+          }`}
           checked={acceptTerms}
           onChange={(e) => {
             setAcceptTerms(e.target.checked);
@@ -165,7 +181,11 @@ export function RegisterComponent() {
       </div>
 
       {termsError && (
-        <p id="terms-error" className="text-xs text-red-500 -mt-2" aria-live="polite">
+        <p
+          id="terms-error"
+          className="text-xs text-red-500 -mt-2"
+          aria-live="polite"
+        >
           {termsError}
         </p>
       )}
@@ -181,14 +201,21 @@ export function RegisterComponent() {
         type="submit"
         disabled={isLoading || !acceptTerms}
         className="w-full px-4 py-2"
-        title={!acceptTerms ? "Marque a caixa de Termos de Uso para criar a conta" : undefined}
+        title={
+          !acceptTerms
+            ? "Marque a caixa de Termos de Uso para criar a conta"
+            : undefined
+        }
       >
         {isLoading ? "Criando conta..." : "Criar conta"}
       </Button>
 
       <p className="mt-4 text-center text-sm">
         Já tem conta?{" "}
-        <Link href="/login" className="font-semibold hover:underline text-primary">
+        <Link
+          href="/login"
+          className="font-semibold hover:underline text-primary"
+        >
           Entrar
         </Link>
       </p>

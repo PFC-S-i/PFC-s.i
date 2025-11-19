@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: "InfoCrypto",
   description: "Notícias do mundo cripto e cotações atualizadas",
   icons: {
-    icon: "/logo.png", // arquivo em /public/logo.png
+    icon: "/logo.png",
   },
 };
 
@@ -25,9 +25,9 @@ export default function RootLayout({
         <AuthProvider>
           <Header />
           {children}
-          {/* <Footer /> */}
           <Toaster />
         </AuthProvider>
+        <Footer />
       </body>
     </html>
   );
