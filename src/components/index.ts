@@ -1,9 +1,6 @@
 export { Input } from "./input";
 export { Main } from "./main";
 export {
-  AvatarFallback,
-  AvatarImage,
-  Badge,
   Card,
   CardContent,
   Checkbox,
@@ -23,17 +20,11 @@ export {
   FormLabel,
   FormMessage,
   Label,
-  Separator,
-  ShadcnAvatar,
   ShadcnButton,
   type ButtonProps,
   ShadcnDialog,
   ShadcnInput,
   ShadcnSelect,
-  ShadcnTooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
   Sheet,
   ShadcnTable,
   TableHead,

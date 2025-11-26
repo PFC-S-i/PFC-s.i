@@ -1,5 +1,3 @@
-export { AvatarFallback, AvatarImage, ShadcnAvatar } from "./avatar";
-export { Badge } from "./badge";
 export { ShadcnButton, type ButtonProps } from "./button";
 export {
   ShadcnDialog,
@@ -50,13 +48,6 @@ export {
   SelectItem,
 } from "./select";
 export { Checkbox } from "./checkbox";
-export {
-  ShadcnTooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./tooltip";
-export { Separator } from "./separator";
+
 export { Sheet } from "./sheet";
 export { Card, CardContent } from "./card";
-export { RadioGroup, RadioGroupItem } from "./radio-group";
