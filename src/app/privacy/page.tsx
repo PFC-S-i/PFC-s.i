@@ -13,7 +13,7 @@ export default function PrivacyPage() {
       {/* Botão de voltar para cadastro */}
       <div className="mb-6">
         <Link
-          href="/register" // troque se sua rota de cadastro for outra
+          href="/register"
           className="inline-flex items-center gap-2 rounded-md border border-white/10 px-3 py-2 text-sm hover:bg-white/10"
           aria-label="Voltar para a tela de cadastro"
         >
