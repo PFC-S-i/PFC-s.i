@@ -8,13 +8,7 @@ type Props = {
   moneyFmt: (n: number) => string;
 };
 
-export function StatsGrid({
-  high24h,
-  low24h,
-  marketCap,
-  volume24h,
-  moneyFmt,
-}: Props) {
+export function StatsGrid({ marketCap, moneyFmt }: Props) {
   return (
     <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
       <Stat

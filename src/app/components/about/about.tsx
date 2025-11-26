@@ -302,11 +302,6 @@ export function About() {
   });
   const nf = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
 
-  const selectedCount =
-    activeIds === null
-      ? options.length
-      : activeIds.split(",").filter(Boolean).length;
-
   return (
     <section id="sobre" className="py-20 max-w-6xl mx-auto">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
