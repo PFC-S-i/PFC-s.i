@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 
 import { EmptyState } from "@/app/forum/components/empty-state";
 import { NewPostModal } from "@/app/forum/components/new-post-modal";
-// import { PostCard } from "@/app/forum/components/post-card"; // não precisa mais aqui
 import type { ForumPost } from "@/types/forum";
 import { PostList } from "@/app/forum/components/post-list";
 import { Button } from "@/components";
@@ -229,7 +228,7 @@ export default function ForumClient() {
     [me, flashMessage]
   );
 
-  // EDIT (abre modal com dados)
+  //  abre modal com dados
   const handleEdit = useCallback((post: ForumPostEx) => {
     setMode("edit");
     setEditing(post);
@@ -311,8 +310,8 @@ export default function ForumClient() {
           <div>
             <h1 className="text-2xl md:text-3xl font-semibold">Fórum</h1>
             <p className="opacity-80 text-sm md:text-base mt-1">
-              Compartilhe e veja notícias relevantes da comunidade sobre o
-              mundo cripto.
+              Compartilhe e veja notícias relevantes da comunidade sobre o mundo
+              cripto.
             </p>
             <div
               role="alert"
@@ -322,8 +321,8 @@ export default function ForumClient() {
                 ⚠️
               </span>
               <p className="m-0">
-                Todos os posts são validados por IA para manter o conteúdo
-                limpo e confiável.
+                Todos os posts são validados por IA para manter o conteúdo limpo
+                e confiável.
               </p>
             </div>
           </div>
@@ -383,7 +382,7 @@ export default function ForumClient() {
                 }}
               />
             ) : (
-              // aqui entra a lista paginada
+              // lista paginada
               <PostList posts={ordered} />
             )}
           </>

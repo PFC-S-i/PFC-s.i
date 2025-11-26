@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-export const revalidate = 120; // cache em CDN/edge por 2 min
+export const revalidate = 120; // cache por 2 min
 const MAX_HOURS = 24 * 31;
 
 function clamp(n: number, min: number, max: number) {
@@ -25,10 +25,9 @@ async function fetchWithRetry(
 
 export async function GET(
   req: Request,
-  // 👇 No Next 15 o params é Promise — tipagem inline obrigatória
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params; // 👈 await no params
+  const { id } = await params; //   await no params
 
   const { searchParams } = new URL(req.url);
   const vs = (searchParams.get("vs") ?? "brl").toLowerCase();
