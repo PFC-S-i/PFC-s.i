@@ -1,4 +1,3 @@
-// src/app/educational/data/topics.data.ts
 import type { ITopic } from "@/types/topics.type";
 
 import bitcoin from "@/app/educational/img/bitcoin.jpg";
@@ -16,25 +15,24 @@ export const EDUCATIONAL_TOPICS: ITopic[] = [
     slug: "o-que-sao-criptomoedas",
     title: "O que são Criptomoedas?",
     img: criptomoedas,
-    route: "criptomoedas", // 👉 vai para /educational/criptomoedas
+    route: "criptomoedas",
   },
   {
     slug: "como-funciona-a-blockchain",
     title: "Como funciona a Blockchain?",
     img: blockchain,
-    route: "blockchain", // 👉 vai para /educational/blockchain
+    route: "blockchain",
   },
   {
     slug: "saiba-mais-sobre-bitcoin",
     title: "Saiba mais sobre o Bitcoin",
     img: bitcoin,
-    route: "bitcoin", // opcional, segue o mesmo padrão
+    route: "bitcoin",
   },
   {
     slug: "smart-contracts",
     title: "Ethereum e a ideia de “smart contracts”",
     img: ethereum,
-    // route: "ethereum"               // se quiser /educational/ethereum
   },
   { slug: "tipos-de-carteiras", title: "Tipos de carteiras", img: carteiras },
   {
