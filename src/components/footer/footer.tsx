@@ -20,10 +20,10 @@ export default function Footer() {
         <div className="flex items-center gap-2 text-muted-foreground">
           <Mail className="h-4 w-4" aria-hidden />
           <a
-            href="mailto:feguboni@gmail.com"
+            href="mailto:infocryptopfc@gmail.com"
             className="hover:text-foreground transition-colors"
           >
-            feguboni@gmail.com
+            infocryptopfc@gmail.com
           </a>
         </div>
       </div>

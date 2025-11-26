@@ -1,4 +1,3 @@
-// src/app/forum/components/post-card.tsx
 "use client";
 
 import { useAIBadge } from "@/app/forum/hooks/useAIBadge";
@@ -42,14 +41,12 @@ type Props = {
 type Vote = -1 | 0 | 1;
 type AILabel = "crypto" | "offtopic" | "uncertain";
 
-/* ====== DEBUG LOGGING ====== */
 const DEBUG = (process.env.NEXT_PUBLIC_AI_DEBUG ?? "1") !== "0";
 const TAG = "[AI-BADGE]";
 const d = (...args: unknown[]) => {
   if (DEBUG) console.debug(TAG, ...args);
 };
 
-/* ====== FILA GLOBAL + CONTROLES ====== */
 const CONCURRENCY = 1;
 let running = 0;
 const queue: Array<() => Promise<void>> = [];
@@ -101,7 +98,6 @@ type ForumPostWithCoin = ForumPost & {
   coin_id?: string | null;
 };
 
-/* ====== RETRY COM BACKOFF + PERSISTÊNCIA DE TENTATIVAS ====== */
 const MAX_RETRIES = 5;
 const BASE_DELAY_MS = 1500;
 
@@ -166,9 +162,7 @@ function clearAttempts(lsKey: string) {
     if (typeof window === "undefined") return;
     localStorage.removeItem(attemptsKey(lsKey));
     d("clearAttempts", lsKey);
-  } catch {
-    // ignore
-  }
+  } catch {}
 }
 function scheduleRetry(
   lsKey: string,
@@ -189,14 +183,11 @@ function scheduleRetry(
   }, delay);
 }
 
-/* ====== LS helpers ====== */
 function saveAiBadge(key: string, label: AILabel) {
   try {
     localStorage.setItem(key, JSON.stringify({ label, at: Date.now() }));
     d("saved badge to LS:", key, "→", label);
-  } catch {
-    // ignore
-  }
+  } catch {}
 }
 function safeReadLS<T = unknown>(key: string): T | null {
   try {
@@ -239,7 +230,7 @@ function tryClassify(
   d("tryClassify START", { lsKey, postId, title });
 
   enqueue(async () => {
-    // pequena espera aleatória pra não bater tudo junto
+    // pequena espera   pra não bater tudo junto
     await sleep(120 + Math.floor(Math.random() * 180));
 
     let res: ClassifyResult | null = null;
@@ -269,8 +260,6 @@ function tryClassify(
     d("tryClassify END", lsKey);
   });
 }
-
-/* ========================= Componente ========================= */
 
 export function PostCard({
   post,
