@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
+import { Button } from "@/components/button";
 import { getNews } from "@/services/news.service";
 import type { NewsItem } from "@/services/news.service";
 
@@ -67,32 +68,14 @@ function NewsCard({ item }: { item: NewsItem }) {
   );
 }
 
-type NavButtonProps = {
-  side: "left" | "right";
-  label: string;
-  onClick: () => void;
-};
-function NavButton({ side, label, onClick }: NavButtonProps) {
-  const base =
-    "absolute top-1/2 -translate-y-1/2 rounded-full bg-card px-3 py-2 text-sm text-foreground hover:bg-foreground/10";
-  const pos = side === "left" ? "left-2" : "right-2";
-  const symbol = side === "left" ? "‹" : "›";
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
-      className={`${base} ${pos}`}
-    >
-      {symbol}
-    </button>
-  );
-}
-
 export default function NewsCarousel() {
   const [items, setItems] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Estados para habilitar/desabilitar navegação (padrão About)
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
 
   const plugins = useMemo(
     () => [
@@ -109,6 +92,25 @@ export default function NewsCarousel() {
     { loop: true, align: "start" },
     plugins
   );
+
+  // Atualiza disponibilidade das setas conforme Embla
+  useEffect(() => {
+    if (!emblaApi) return;
+
+    const updateNav = () => {
+      setCanPrev(emblaApi.canScrollPrev());
+      setCanNext(emblaApi.canScrollNext());
+    };
+
+    updateNav();
+    emblaApi.on("select", updateNav);
+    emblaApi.on("reInit", updateNav);
+
+    return () => {
+      emblaApi.off("select", updateNav);
+      emblaApi.off("reInit", updateNav);
+    };
+  }, [emblaApi]);
 
   useEffect(() => {
     let isMounted = true;
@@ -135,7 +137,7 @@ export default function NewsCarousel() {
     };
   }, []);
 
-  const showNav = items.length > 3;
+  const showNav = !loading && items.length > 3;
   const isEmpty = !loading && items.length === 0 && !error;
 
   return (
@@ -174,19 +176,30 @@ export default function NewsCarousel() {
           </div>
         </div>
 
+        {/* Navegação inferior no padrão do About */}
         {showNav && (
-          <>
-            <NavButton
-              side="left"
-              label="Anterior"
+          <div className="mt-5 hidden lg:flex items-center justify-between">
+            <Button
+              variant="outline"
+              size="icon"
               onClick={() => emblaApi?.scrollPrev()}
-            />
-            <NavButton
-              side="right"
-              label="Próximo"
+              disabled={!canPrev}
+              className="min-w-10"
+              tooltipContent="Anterior"
+            >
+              ‹
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
               onClick={() => emblaApi?.scrollNext()}
-            />
-          </>
+              disabled={!canNext}
+              className="min-w-10"
+              tooltipContent="Próximo"
+            >
+              ›
+            </Button>
+          </div>
         )}
       </div>
 

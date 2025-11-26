@@ -18,17 +18,8 @@ export function StatsGrid({
   return (
     <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
       <Stat
-        label="Máx. 24h"
-        value={high24h != null ? moneyFmt(high24h) : "—"}
-      />
-      <Stat label="Mín. 24h" value={low24h != null ? moneyFmt(low24h) : "—"} />
-      <Stat
         label="Cap. de Mercado"
         value={marketCap != null ? moneyFmt(marketCap) : "—"}
-      />
-      <Stat
-        label="Volume 24h"
-        value={volume24h != null ? moneyFmt(volume24h) : "—"}
       />
     </div>
   );

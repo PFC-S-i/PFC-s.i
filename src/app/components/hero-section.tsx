@@ -29,13 +29,17 @@ export function HeroSection() {
         <div className="order-2 lg:order-1 text-left min-w-0">
           <h2 className="text-2xl md:text-5xl font-semibold mb-4 leading-tight">
             Deixe a{" "}
-            <span className="px-3 text-primary rounded-2xl">infoCrypto</span> te
+            <span className=" text-primary rounded-2xl">infoCrypto</span> te
             ajudar
           </h2>
           <p className="text-base md:text-xl text-white/80">
-            Aqui, você encontra notícias confiáveis, preços em tempo real e conteúdos educativos, tudo em um só lugar. <br></br>
-            Crie sua conta, personalize seus favoritos e acompanhe um painel simples e direto pra entender o que realmente importa no mercado cripto. <br></br>
-            Sem complicação, sem ruído: aprenda, compare e tome as melhores decisões!
+            Aqui, você encontra notícias confiáveis, preços em tempo real e
+            conteúdos educativos, tudo em um só lugar. <br></br>
+            Crie sua conta, personalize seus favoritos e acompanhe um painel
+            simples e direto pra entender o que realmente importa no mercado
+            cripto. <br></br>
+            Sem complicação, sem ruído: aprenda, compare e tome as melhores
+            decisões!
           </p>
         </div>
       </div>

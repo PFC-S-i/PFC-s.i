@@ -91,7 +91,7 @@ export function ChartPanel({
             <Line
               type="monotone"
               dataKey="price"
-              stroke="#38bdf8"
+              stroke="#38bda9"
               strokeWidth={2.2}
               dot={false}
               isAnimationActive={false}
