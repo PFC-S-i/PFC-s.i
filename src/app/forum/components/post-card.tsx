@@ -10,7 +10,6 @@ import {
   ThumbsUp,
 } from "lucide-react";
 
-import { useAIBadge } from "@/app/forum/hooks/useAIBadge";
 import { formatRelative } from "@/app/forum/lib/utils";
 import type { ForumPost } from "@/types/forum";
 import {
@@ -39,59 +38,18 @@ type Props = {
 };
 
 type Vote = -1 | 0 | 1;
+
+// mesmos labels da IA
 type AILabel = "crypto" | "offtopic" | "uncertain";
+type Decision = "allow" | "warn" | "block";
 
-const DEBUG = (process.env.NEXT_PUBLIC_AI_DEBUG ?? "1") !== "0";
-const TAG = "[AI-BADGE]";
-const d = (...args: unknown[]) => {
-  if (DEBUG) console.debug(TAG, ...args);
+// o que salvamos no localStorage
+type StoredAIBadge = {
+  label: AILabel;
+  decision?: Decision;
+  ui_label?: string;
+  at: number;
 };
-
-const CONCURRENCY = 1;
-let running = 0;
-const queue: Array<() => Promise<void>> = [];
-const inflightKeys = new Set<string>();
-
-function runNext() {
-  d("runNext() called | running:", running, "queue:", queue.length);
-  while (running < CONCURRENCY && queue.length) {
-    const task = queue.shift()!;
-    running++;
-    d("→ start task | running:", running, "queue:", queue.length);
-    task()
-      .catch((e) => {
-        d("task error (ignored):", e);
-      })
-      .finally(() => {
-        running--;
-        d("← task finished | running:", running, "queue:", queue.length);
-        runNext();
-      });
-  }
-}
-
-function enqueue<T>(fn: () => Promise<T>): Promise<T> {
-  d("enqueue task (before) | queue:", queue.length + 1);
-  return new Promise((resolve, reject) => {
-    queue.push(async () => {
-      try {
-        const r = await fn();
-        resolve(r);
-      } catch (e) {
-        reject(e);
-      }
-    });
-    runNext();
-  });
-}
-
-function toMessage(err: unknown): string {
-  return err instanceof Error
-    ? err.message
-    : typeof err === "string"
-    ? err
-    : "Erro ao processar ação.";
-}
 
 type ForumPostWithMeta = ForumPost & {
   coinId?: string | null;
@@ -101,113 +59,20 @@ type ForumPostWithMeta = ForumPost & {
   owner_id?: string | null;
 };
 
-const MAX_RETRIES = 5;
-const BASE_DELAY_MS = 1500;
-
-type ClassifyResult = {
-  label?: AILabel;
-  [key: string]: unknown;
+const DEBUG = (process.env.NEXT_PUBLIC_AI_DEBUG ?? "1") !== "0";
+const TAG = "[AI-BADGE]";
+const d = (...args: unknown[]) => {
+  if (DEBUG) console.debug(TAG, ...args);
 };
 
-async function classifyWithRetry(
-  title: string,
-  description: string,
-  max = 3
-): Promise<ClassifyResult> {
-  let attempt = 0;
-  let delay = 1000;
-  while (attempt < max) {
-    try {
-      d("classify attempt", attempt + 1, "/", max, "title:", title);
-      const res = await classifyEventLocalAPI(title, description);
-      d("classify success →", res?.label);
-      return res;
-    } catch (e) {
-      attempt++;
-      d("classify error on attempt", attempt, e);
-      if (attempt >= max) throw new Error("Falha ao classificar");
-      const jitter = Math.floor(Math.random() * 300);
-      const wait = Math.min(delay, 6000) + jitter;
-      d("retrying in", wait, "ms");
-      await sleep(wait);
-      delay *= 2;
-    }
-  }
-  throw new Error("Falha ao classificar");
+function toMessage(err: unknown): string {
+  return err instanceof Error
+    ? err.message
+    : typeof err === "string"
+    ? err
+    : "Erro ao processar ação.";
 }
 
-function attemptsKey(lsKey: string) {
-  return `event_ai_attempts:${lsKey}`;
-}
-function getAttempts(lsKey: string) {
-  try {
-    if (typeof window === "undefined") return 0;
-    const v = localStorage.getItem(attemptsKey(lsKey));
-    const n = v ? parseInt(v, 10) : 0;
-    return Number.isFinite(n) ? n : 0;
-  } catch {
-    return 0;
-  }
-}
-function incAttempts(lsKey: string) {
-  try {
-    if (typeof window === "undefined") return 1;
-    const n = getAttempts(lsKey) + 1;
-    localStorage.setItem(attemptsKey(lsKey), String(n));
-    d("incAttempts", lsKey, "→", n);
-    return n;
-  } catch {
-    return 1;
-  }
-}
-function clearAttempts(lsKey: string) {
-  try {
-    if (typeof window === "undefined") return;
-    localStorage.removeItem(attemptsKey(lsKey));
-    d("clearAttempts", lsKey);
-  } catch {
-    // ignore
-  }
-}
-function scheduleRetry(
-  lsKey: string,
-  title: string,
-  desc: string,
-  postId: string | null
-) {
-  const attempt = incAttempts(lsKey);
-  if (attempt > MAX_RETRIES) {
-    d("max retries reached for", lsKey);
-    return;
-  }
-  const delay =
-    BASE_DELAY_MS * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 600);
-  d("scheduleRetry", { lsKey, attempt, delay });
-  setTimeout(() => {
-    tryClassify(lsKey, title, desc, postId);
-  }, delay);
-}
-
-function saveAiBadge(key: string, label: AILabel) {
-  try {
-    localStorage.setItem(key, JSON.stringify({ label, at: Date.now() }));
-    d("saved badge to LS:", key, "→", label);
-  } catch {
-    // ignore
-  }
-}
-function safeReadLS<T = unknown>(key: string): T | null {
-  try {
-    if (typeof window === "undefined") return null;
-    const txt = localStorage.getItem(key);
-    if (!txt) return null;
-    const val = JSON.parse(txt) as T;
-    d("read LS:", key, "→", val);
-    return val;
-  } catch {
-    return null;
-  }
-}
 function simpleHash(s: string): string {
   let h = 0;
   for (let i = 0; i < s.length; i++) {
@@ -216,56 +81,38 @@ function simpleHash(s: string): string {
   }
   return Math.abs(h).toString(36);
 }
+
 function makeAiKey(id: string | null, title: string, description: string) {
   return `event_ai_${id ?? simpleHash(`${title}::${description}`)}`;
 }
-function sleep(ms: number) {
-  return new Promise((r) => setTimeout(r, ms));
+
+function readBadgeFromStorage(key: string): StoredAIBadge | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredAIBadge;
+    if (
+      parsed &&
+      (parsed.label === "crypto" ||
+        parsed.label === "offtopic" ||
+        parsed.label === "uncertain")
+    ) {
+      return parsed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
-function tryClassify(
-  lsKey: string,
-  title: string,
-  desc: string,
-  postId: string | null
-) {
-  if (inflightKeys.has(lsKey)) {
-    d("skip tryClassify (inflight)", lsKey);
-    return;
+function saveBadgeToStorage(key: string, badge: StoredAIBadge) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(key, JSON.stringify(badge));
+  } catch {
+    // ignore
   }
-  inflightKeys.add(lsKey);
-  d("tryClassify START", { lsKey, postId, title });
-
-  enqueue(async () => {
-    // pequena espera pra não bater tudo junto
-    await sleep(120 + Math.floor(Math.random() * 180));
-
-    let res: ClassifyResult | null = null;
-    try {
-      res = await classifyWithRetry(title, desc, 4);
-    } catch (e) {
-      d("classifyWithRetry failed", e);
-      res = null;
-    }
-
-    if (res?.label) {
-      const lbl = res.label as AILabel;
-      saveAiBadge(lsKey, lbl);
-      clearAttempts(lsKey);
-      d("dispatch event-ai-updated", { id: postId, label: lbl });
-      window.dispatchEvent(
-        new CustomEvent("event-ai-updated", {
-          detail: { id: postId, key: lsKey, ai: res },
-        })
-      );
-    } else {
-      d("no result, schedule global retry");
-      scheduleRetry(lsKey, title, desc, postId);
-    }
-  }).finally(() => {
-    inflightKeys.delete(lsKey);
-    d("tryClassify END", lsKey);
-  });
 }
 
 export function PostCard({
@@ -286,6 +133,9 @@ export function PostCard({
   );
   const [vote, setVote] = useState<Vote>(0);
   const [pending, setPending] = useState(false);
+
+  // Ler mais / ler menos
+  const [expanded, setExpanded] = useState(false);
 
   const key = meId ? `forum:vote:${meId}:${post.id}` : null;
 
@@ -369,10 +219,20 @@ export function PostCard({
   })();
   const coinLabel = coinId ?? "—";
 
-  const ai = useAIBadge({
-    id: post.id ?? null,
-    title: post.title ?? "",
-    description: post.description ?? "",
+  const descriptionText = post.description ?? "";
+  const isLongDescription = descriptionText.length > 600;
+
+  // ==== ESTADO DA IA PARA O BADGE ====
+  const [aiBadge, setAiBadge] = useState<{
+    label: AILabel | null;
+    decision: Decision | null;
+    ui_label: string | null;
+    loading: boolean;
+  }>({
+    label: null,
+    decision: null,
+    ui_label: null,
+    loading: true,
   });
 
   useEffect(() => {
@@ -381,38 +241,104 @@ export function PostCard({
     const title = post.title ?? "";
     const desc = post.description ?? "";
 
-    if (ai) {
-      d("skip auto-classify: label already present", { id: post.id, ai });
-      return;
-    }
     if (!title.trim() && !desc.trim()) {
-      d("skip auto-classify: empty content", { id: post.id });
+      setAiBadge((prev) => ({ ...prev, loading: false }));
       return;
     }
 
     const lsKey = makeAiKey(post.id ?? null, title, desc);
-    d("auto-classify check", { id: post.id, lsKey });
+    d("AI badge check for post", post.id, "key:", lsKey);
 
-    const existing = safeReadLS<{ label?: AILabel }>(lsKey);
-    if (existing?.label) {
-      d("localStorage already has label → dispatch", {
-        id: post.id,
-        label: existing.label,
+    // 1) Tenta ler do localStorage primeiro
+    const cached = readBadgeFromStorage(lsKey);
+    if (cached) {
+      d("AI badge from cache:", cached);
+      setAiBadge({
+        label: cached.label,
+        decision: cached.decision ?? null,
+        ui_label: cached.ui_label ?? null,
+        loading: false,
       });
-      window.dispatchEvent(
-        new CustomEvent("event-ai-updated", {
-          detail: {
-            id: post.id ?? null,
-            key: lsKey,
-            ai: { label: existing.label },
-          },
-        })
-      );
       return;
     }
 
-    tryClassify(lsKey, title, desc, post.id ?? null);
-  }, [ai, post.id, post.title, post.description]);
+    // 2) Se não tiver cache, classifica agora
+    let cancelled = false;
+    setAiBadge((prev) => ({ ...prev, loading: true }));
+
+    (async () => {
+      try {
+        const res = await classifyEventLocalAPI(title, desc);
+        if (cancelled) return;
+
+        const anyRes = res as any;
+        const stored: StoredAIBadge = {
+          label: res.label as AILabel,
+          decision:
+            anyRes.decision === "allow" ||
+            anyRes.decision === "warn" ||
+            anyRes.decision === "block"
+              ? anyRes.decision
+              : undefined,
+          ui_label:
+            typeof anyRes.ui_label === "string" ? anyRes.ui_label : undefined,
+          at: Date.now(),
+        };
+
+        d("AI badge fresh result:", stored);
+        saveBadgeToStorage(lsKey, stored);
+
+        setAiBadge({
+          label: stored.label,
+          decision: stored.decision ?? null,
+          ui_label: stored.ui_label ?? null,
+          loading: false,
+        });
+      } catch (e) {
+        if (DEBUG) console.error(TAG, "classify error", e);
+        if (!cancelled) {
+          setAiBadge((prev) => ({ ...prev, loading: false }));
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [post.id, post.title, post.description]);
+
+  // ==== CÁLCULO FINAL DO BADGE (cor + texto) ====
+  const isWarn = aiBadge.decision === "warn";
+  const isOfftopic = aiBadge.label === "offtopic";
+  const isCrypto = aiBadge.label === "crypto";
+
+  let badgeColor = "bg-amber-500/10 text-amber-400";
+  let badgeText = "Em análise";
+  let badgeTitle = "Aguardando validação automática por IA.";
+
+  if (!aiBadge.loading && (isCrypto || isOfftopic || isWarn)) {
+    if (isWarn) {
+      // 🔴 Fake news / sátira / duvidoso
+      badgeColor = "bg-red-500/10 text-red-400";
+      badgeText =
+        aiBadge.ui_label || "Conteúdo marcado como possível fake news / sátira";
+      badgeTitle =
+        aiBadge.ui_label ||
+        "A IA marcou este conteúdo como potencialmente não confiável (fake news, sátira ou informação duvidosa).";
+    } else if (isOfftopic) {
+      // 🔴 Fora do escopo
+      badgeColor = "bg-red-500/10 text-red-400";
+      badgeText = "Conteúdo considerado fora do escopo";
+      badgeTitle =
+        "A IA entendeu que este post não está relacionado ao ecossistema de criptomoedas.";
+    } else if (isCrypto) {
+      // 🟢 Conteúdo normal sobre cripto
+      badgeColor = "bg-green-500/10 text-green-400";
+      badgeText = "Informação validada por IA";
+      badgeTitle =
+        "A IA classificou este conteúdo como relacionado ao ecossistema de criptomoedas.";
+    }
+  }
 
   const iconBtn =
     "p-0 m-0 bg-transparent border-0 outline-none hover:opacity-80 active:opacity-90 focus-visible:outline-none disabled:opacity-60";
@@ -421,19 +347,6 @@ export function PostCard({
     vote === -1 ? "text-red-500" : "text-white/70"
   }`;
   const countClass = "ml-1 tabular-nums text-white/70 min-w-[2ch] text-center";
-
-  const badgeColor =
-    ai === "crypto"
-      ? "bg-green-500/10 text-green-400"
-      : ai === "offtopic"
-      ? "bg-red-500/10 text-red-400"
-      : "bg-amber-500/10 text-amber-400";
-  const badgeText =
-    ai === "crypto"
-      ? "Informação validada por IA"
-      : ai === "offtopic"
-      ? "Informação considerada inválida"
-      : "Em análise";
 
   // --------- só o autor pode editar/excluir ---------
   const ownerId =
@@ -476,13 +389,7 @@ export function PostCard({
                   "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium " +
                   badgeColor
                 }
-                title={
-                  ai === "crypto"
-                    ? "Classificado como relacionado a cripto"
-                    : ai === "offtopic"
-                    ? "Classificado como fora do escopo"
-                    : "Classificação em andamento"
-                }
+                title={badgeTitle}
               >
                 {badgeText}
               </span>
@@ -551,13 +458,37 @@ export function PostCard({
           <span className="font-medium text-white">{coinLabel}</span>
         </div>
 
-        {/* descrição */}
-        <p className="mt-2 whitespace-pre-wrap text-[15px] leading-6">
-          {post.description}
-        </p>
+        {/* descrição com Ler mais / Ler menos */}
+        {descriptionText && (
+          <div className="mt-2">
+            <div
+              className={
+                "relative text-[15px] leading-6 whitespace-pre-wrap" +
+                (!expanded && isLongDescription
+                  ? " max-h-40 overflow-hidden pr-1"
+                  : "")
+              }
+            >
+              {descriptionText}
+              {!expanded && isLongDescription && (
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#1B1B1B] to-transparent" />
+              )}
+            </div>
+
+            {isLongDescription && (
+              <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                className="mt-1 text-xs font-medium text-sky-400 hover:text-sky-300"
+              >
+                {expanded ? "Ler menos..." : "Ler mais..."}
+              </button>
+            )}
+          </div>
+        )}
 
         {/* ações */}
-        <div className="mt-2 flex items-center gap-5">
+        <div className="mt-3 flex items-center gap-5">
           <div className="flex items-center">
             <button
               type="button"

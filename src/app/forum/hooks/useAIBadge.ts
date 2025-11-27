@@ -48,7 +48,17 @@ export function makeAiKeyFromData(
 type AiUpdatedDetail = {
   id?: string | null;
   key?: string;
-  ai?: { label?: AILabel };
+  ai?: {
+    label?: AILabel;
+    misinfo_risk?:
+      | "ok_informative"
+      | "satire_or_obvious_fake"
+      | "dubious_or_conspiratorial"
+      | "scam_or_financial_fraud"
+      | "not_about_crypto";
+    decision?: "allow" | "warn" | "block";
+    ui_label?: string;
+  };
 };
 
 /**

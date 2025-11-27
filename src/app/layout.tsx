@@ -21,13 +21,18 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className="px-4 md:px-10 lg:px-20 xl:px-32 max-w-[1920px] mx-auto bg-background text-foreground">
+      <body className="bg-background text-foreground">
         <AuthProvider>
-          <Header />
-          {children}
+          <div className="min-h-screen flex flex-col px-4 md:px-10 lg:px-20 xl:px-32 max-w-[1920px] mx-auto">
+            <Header />
+
+            <main className="flex-1">{children}</main>
+
+            <Footer />
+          </div>
+
           <Toaster />
         </AuthProvider>
-        <Footer />
       </body>
     </html>
   );

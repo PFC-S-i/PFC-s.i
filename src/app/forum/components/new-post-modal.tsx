@@ -6,7 +6,10 @@ import { Plus, Pencil } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { classifyEventLocalAPI } from "@/services/ai.service";
+import {
+  classifyEventLocalAPI,
+  type EventAI,
+} from "@/services/ai.service";
 
 import { useCharCounter } from "@/app/forum/hooks/useCharCounter";
 import { classNames } from "@/app/forum/lib/utils";
@@ -77,6 +80,12 @@ export function NewPostModal({
 
   // erro de moderação da IA (bloqueio)
   const [aiError, setAiError] = useState<string | null>(null);
+  // aviso de risco / possível fake news
+  const [aiWarning, setAiWarning] = useState<string | null>(null);
+  // último resultado da IA (para reaproveitar no segundo clique)
+  const [lastAi, setLastAi] = useState<EventAI | null>(null);
+  // se o usuário já viu o aviso e quer publicar mesmo assim
+  const [aiAllowAnyway, setAiAllowAnyway] = useState(false);
 
   // Preenche quando abrir em modo edição
   useEffect(() => {
@@ -103,20 +112,79 @@ export function NewPostModal({
     reset(DEFAULT_VALUES);
     setCoinOptions([]);
     setAiError(null);
+    setAiWarning(null);
+    setLastAi(null);
+    setAiAllowAnyway(false);
     onClose();
   }, [onClose, reset]);
+
+  const createPost = useCallback(
+    async (data: NewPostForm, ai: EventAI | null) => {
+      const nowIso = new Date().toISOString();
+
+      const result = await Promise.resolve(
+        onConfirm({
+          title: data.title.trim(),
+          description: data.description.trim(),
+          coin_id: data.coin_id,
+          starts_at: nowIso,
+          ends_at: nowIso,
+        })
+      );
+
+      let createdId: string | null = null;
+      if (
+        result &&
+        typeof result === "object" &&
+        "id" in result &&
+        typeof result.id === "string"
+      ) {
+        createdId = result.id;
+      }
+
+      handleClose();
+
+      if (!ai) return;
+
+      // reaproveita IA para badge/evento
+      try {
+        const key = makeAiKey(createdId, data.title, data.description);
+        saveAiBadge(key, ai);
+        window.dispatchEvent(
+          new CustomEvent("event-ai-updated", {
+            detail: { id: createdId, key, ai },
+          })
+        );
+      } catch {
+        // silencioso
+      }
+    },
+    [onConfirm, handleClose]
+  );
 
   const onValid = useCallback(
     async (data: NewPostForm) => {
       setAiError(null);
 
-      // 1) IA antes de criar o post
-      let ai;
+      // 1) Se já existe aviso amarelo e o usuário clicou de novo, publica direto
+      if (aiWarning && lastAi && aiAllowAnyway) {
+        await createPost(data, lastAi);
+        return;
+      }
+
+      // reset de aviso (nova tentativa normal)
+      setAiWarning(null);
+      setAiAllowAnyway(false);
+      setLastAi(null);
+
+      // 2) IA antes de criar o post
+      let ai: EventAI;
       try {
         ai = await classifyEventLocalAPI(data.title, data.description);
+        setLastAi(ai);
 
         const isOffTopic = ai.label !== "crypto";
-        const shouldBlock = ai.blocked || isOffTopic;
+        const shouldBlock = ai.blocked || isOffTopic || ai.decision === "block";
 
         if (shouldBlock) {
           const reasons =
@@ -132,57 +200,32 @@ export function NewPostModal({
             reasons.length > 0 ? ` Motivo: ${reasons.join(" | ")}` : "";
 
           setAiError(baseMsg + extra);
-          // ❌ não chama onConfirm, não fecha modal
+          return;
+        }
+
+        // 3) Se não bloqueou, mas a decisão é "warn",
+        // apenas mostra o banner amarelo e espera um segundo clique
+        if (ai.decision === "warn") {
+          const label = ai.ui_label || "Possível fake news / sátira";
+          const reason =
+            ai.reason ||
+            (ai.reasons && ai.reasons.length ? ai.reasons.join(" | ") : "");
+
+          setAiWarning(`${label}${reason ? ` — ${reason}` : ""}`);
+          setAiAllowAnyway(true);
           return;
         }
       } catch {
-        // Falha na IA — aqui optei por NÃO enviar o post.
         setAiError(
           "Não foi possível validar seu post com a moderação automática. Tente novamente em instantes."
         );
         return;
       }
 
-      // 2) Se passou na IA, cria o post normalmente
-      const nowIso = new Date().toISOString();
-
-      const result = await Promise.resolve(
-        onConfirm({
-          title: data.title.trim(),
-          description: data.description.trim(),
-          coin_id: data.coin_id,
-          starts_at: nowIso,
-          ends_at: nowIso,
-        })
-      );
-
-      // extrai id sem usar any
-      let createdId: string | null = null;
-      if (
-        result &&
-        typeof result === "object" &&
-        "id" in result &&
-        typeof result.id === "string"
-      ) {
-        createdId = result.id;
-      }
-
-      handleClose();
-
-      // 3) Como já temos o resultado da IA, reaproveitamos para badge/evento
-      try {
-        const key = makeAiKey(createdId, data.title, data.description);
-        saveAiBadge(key, ai.label);
-        window.dispatchEvent(
-          new CustomEvent("event-ai-updated", {
-            detail: { id: createdId, key, ai },
-          })
-        );
-      } catch {
-        // silencioso
-      }
+      // 4) Se chegou aqui, é "allow" → cria o post normalmente
+      await createPost(data, lastAi);
     },
-    [onConfirm, handleClose]
+    [aiWarning, lastAi, aiAllowAnyway, createPost]
   );
 
   const submit = useCallback(
@@ -303,7 +346,19 @@ export function NewPostModal({
               void submit();
             }}
           >
-            {/* aviso de moderação da IA */}
+            {/* aviso de risco / possível fake news (amarelo) */}
+            {aiWarning && !aiError && (
+              <div className="mb-3 rounded-xl border border-amber-400/50 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+                <strong className="font-semibold">Aviso:</strong>{" "}
+                {aiWarning}
+                <div className="mt-1 opacity-80">
+                  Se desejar publicar mesmo assim, clique novamente em
+                  &quot;Publicar&quot;.
+                </div>
+              </div>
+            )}
+
+            {/* aviso de moderação da IA (bloqueio) */}
             {aiError && (
               <div className="mb-3 rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">
                 {aiError}
@@ -475,13 +530,23 @@ function Counter({
 function makeAiKey(id: string | null, title: string, description: string) {
   return `event_ai_${id ?? simpleHash(`${title}::${description}`)}`;
 }
-function saveAiBadge(key: string, label: "crypto" | "offtopic" | "uncertain") {
+
+// AGORA salvamos o objeto inteiro da IA, inclusive misinfo_risk/decision/ui_label
+function saveAiBadge(key: string, ai: EventAI) {
   try {
-    localStorage.setItem(key, JSON.stringify({ label, at: Date.now() }));
+    const payload = {
+      label: ai.label,
+      misinfo_risk: ai.misinfo_risk,
+      decision: ai.decision,
+      ui_label: ai.ui_label,
+      at: Date.now(),
+    };
+    localStorage.setItem(key, JSON.stringify(payload));
   } catch {
     // ignore
   }
 }
+
 function simpleHash(s: string) {
   let h = 0;
   for (let i = 0; i < s.length; i++) {
