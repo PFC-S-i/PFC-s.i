@@ -1,6 +1,6 @@
+// src/app/forum/components/post-card.tsx
 "use client";
 
-import { useAIBadge } from "@/app/forum/hooks/useAIBadge";
 import { useEffect, useState } from "react";
 import {
   MoreVertical,
@@ -9,6 +9,8 @@ import {
   ThumbsDown,
   ThumbsUp,
 } from "lucide-react";
+
+import { useAIBadge } from "@/app/forum/hooks/useAIBadge";
 import { formatRelative } from "@/app/forum/lib/utils";
 import type { ForumPost } from "@/types/forum";
 import {
@@ -31,9 +33,6 @@ type Props = {
   post: ForumPost;
   meId?: string | null;
   initialLikes?: number;
-  /** props antigos – hoje ignorados para regra de autorização */
-  canEdit?: boolean;
-  canDelete?: boolean;
   onEdit?: (post: ForumPost) => void;
   onDelete?: (post: ForumPost) => void;
   deleting?: boolean;
@@ -94,9 +93,12 @@ function toMessage(err: unknown): string {
     : "Erro ao processar ação.";
 }
 
-type ForumPostWithCoin = ForumPost & {
+type ForumPostWithMeta = ForumPost & {
   coinId?: string | null;
   coin_id?: string | null;
+  user_id?: string | null;
+  userId?: string | null;
+  owner_id?: string | null;
 };
 
 const MAX_RETRIES = 5;
@@ -163,7 +165,9 @@ function clearAttempts(lsKey: string) {
     if (typeof window === "undefined") return;
     localStorage.removeItem(attemptsKey(lsKey));
     d("clearAttempts", lsKey);
-  } catch {}
+  } catch {
+    // ignore
+  }
 }
 function scheduleRetry(
   lsKey: string,
@@ -188,7 +192,9 @@ function saveAiBadge(key: string, label: AILabel) {
   try {
     localStorage.setItem(key, JSON.stringify({ label, at: Date.now() }));
     d("saved badge to LS:", key, "→", label);
-  } catch {}
+  } catch {
+    // ignore
+  }
 }
 function safeReadLS<T = unknown>(key: string): T | null {
   try {
@@ -266,9 +272,6 @@ export function PostCard({
   post,
   meId = null,
   initialLikes = 0,
-  // canEdit / canDelete são ignorados para a lógica de "só o autor edita"
-  canEdit: _canEdit,
-  canDelete: _canDelete,
   onEdit,
   onDelete,
   deleting = false,
@@ -358,9 +361,10 @@ export function PostCard({
     }
   })();
 
+  const meta = post as ForumPostWithMeta;
+
   const coinId = (() => {
-    const p = post as ForumPostWithCoin;
-    const cid = p.coinId ?? p.coin_id;
+    const cid = meta.coinId ?? meta.coin_id;
     return typeof cid === "string" && cid.trim() ? cid : null;
   })();
   const coinLabel = coinId ?? "—";
@@ -431,12 +435,9 @@ export function PostCard({
       ? "Informação considerada inválida"
       : "Em análise";
 
-  // Só o autor pode editar/excluir
+  // --------- só o autor pode editar/excluir ---------
   const ownerId =
-    (post as any).user_id ??
-    (post as any).userId ??
-    (post as any).owner_id ??
-    null;
+    meta.user_id ?? meta.userId ?? meta.owner_id ?? null;
 
   const isOwner =
     typeof meId === "string" &&
@@ -447,6 +448,7 @@ export function PostCard({
 
   const canEditFinal = isOwner;
   const canDeleteFinal = isOwner;
+  // ---------------------------------------------------
 
   return (
     <article className="flex gap-3 border-b border-white/10 px-4 py-3">

@@ -143,7 +143,7 @@ export default function NewsCarousel() {
   return (
     <section
       aria-label="Últimas notícias"
-      className="mx-auto w-full max-w-5xl space-y-2 py-2"
+      className="mx-auto w-full max-w-6xl space-y-2 py-2"
     >
       <div className="flex items-center text-center justify-center px-2">
         <h2 className="text-xl text-foreground">
