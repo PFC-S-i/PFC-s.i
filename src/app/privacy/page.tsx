@@ -10,7 +10,6 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
-      {/* Botão de voltar para cadastro */}
       <div className="mb-6">
         <Link
           href="/register"
