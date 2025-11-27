@@ -19,8 +19,8 @@ import type { Me } from "@/services/forum.service";
 import Loading from "@/app/loading";
 
 /** Estende o ForumPost com campos necessários para editar/excluir */
-type ForumPostEx = ForumPost & {
-  user_id?: string;
+export type ForumPostWithAuthor = ForumPost & {
+  user_id?: string | null;
   coin_id?: string | null;
 };
 
@@ -115,9 +115,9 @@ function ConfirmDialog({
 export default function ForumClient() {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"create" | "edit">("create");
-  const [editing, setEditing] = useState<ForumPostEx | null>(null);
+  const [editing, setEditing] = useState<ForumPostWithAuthor | null>(null);
 
-  const [posts, setPosts] = useState<ForumPostEx[]>([]);
+  const [posts, setPosts] = useState<ForumPostWithAuthor[]>([]);
   const [flash, setFlash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -126,7 +126,8 @@ export default function ForumClient() {
   const [eventsLoading, setEventsLoading] = useState(false);
 
   // Exclusão
-  const [confirmDelete, setConfirmDelete] = useState<ForumPostEx | null>(null);
+  const [confirmDelete, setConfirmDelete] =
+    useState<ForumPostWithAuthor | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [me, setMe] = useState<Me | null>(null);
@@ -137,6 +138,31 @@ export default function ForumClient() {
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     flashTimerRef.current = setTimeout(() => setFlash(null), 2500);
   }, []);
+
+  // Travar scroll do body quando o modal de edição estiver aberto
+  useEffect(() => {
+    if (!open) return;
+    if (typeof window === "undefined") return;
+
+    const body = document.body;
+    const docEl = document.documentElement;
+
+    const originalOverflow = body.style.overflow;
+    const originalPaddingRight = body.style.paddingRight;
+
+    // largura da barra de rolagem
+    const scrollbarWidth = window.innerWidth - docEl.clientWidth;
+
+    body.style.overflow = "hidden";
+    if (scrollbarWidth > 0) {
+      body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    return () => {
+      body.style.overflow = originalOverflow;
+      body.style.paddingRight = originalPaddingRight;
+    };
+  }, [open]);
 
   // 1) Checa login/token
   useEffect(() => {
@@ -175,12 +201,12 @@ export default function ForumClient() {
           sort: "starts_at:desc",
         });
         if (!alive) return;
-        const mapped: ForumPostEx[] = res.items.map((e) => {
+        const mapped: ForumPostWithAuthor[] = res.items.map((e) => {
           const base = toForumPost(e);
           return {
             ...base,
             author: getAuthorName(base.author, e.user_id, me),
-            user_id: e.user_id,
+            user_id: e.user_id ?? null,
             coin_id: e.coin_id ?? null,
           };
         });
@@ -210,10 +236,10 @@ export default function ForumClient() {
           coin_id: data.coin_id,
         });
         const base = toForumPost(created);
-        const mapped: ForumPostEx = {
+        const mapped: ForumPostWithAuthor = {
           ...base,
           author: getAuthorName(base.author, created.user_id, me),
-          user_id: created.user_id,
+          user_id: created.user_id ?? null,
           coin_id: created.coin_id ?? null,
         };
         setPosts((prev) => [mapped, ...prev]);
@@ -228,15 +254,15 @@ export default function ForumClient() {
     [me, flashMessage]
   );
 
-  //  abre modal com dados
-  const handleEdit = useCallback((post: ForumPostEx) => {
+  // abre modal com dados
+  const handleEdit = useCallback((post: ForumPostWithAuthor) => {
     setMode("edit");
     setEditing(post);
     setOpen(true);
   }, []);
 
   // Clique no ícone de lixeira → abre modal de confirmação
-  const requestDelete = useCallback((post: ForumPostEx) => {
+  const requestDelete = useCallback((post: ForumPostWithAuthor) => {
     setConfirmDelete(post);
   }, []);
 
@@ -383,7 +409,13 @@ export default function ForumClient() {
               />
             ) : (
               // lista paginada
-              <PostList posts={ordered} />
+              <PostList
+                posts={ordered}
+                meId={me.id}
+                onEdit={handleEdit}
+                onDelete={requestDelete}
+                deletingId={deletingId}
+              />
             )}
           </>
         )}

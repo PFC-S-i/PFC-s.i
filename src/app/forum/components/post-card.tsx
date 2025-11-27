@@ -31,6 +31,7 @@ type Props = {
   post: ForumPost;
   meId?: string | null;
   initialLikes?: number;
+  /** props antigos – hoje ignorados para regra de autorização */
   canEdit?: boolean;
   canDelete?: boolean;
   onEdit?: (post: ForumPost) => void;
@@ -230,7 +231,7 @@ function tryClassify(
   d("tryClassify START", { lsKey, postId, title });
 
   enqueue(async () => {
-    // pequena espera   pra não bater tudo junto
+    // pequena espera pra não bater tudo junto
     await sleep(120 + Math.floor(Math.random() * 180));
 
     let res: ClassifyResult | null = null;
@@ -265,8 +266,9 @@ export function PostCard({
   post,
   meId = null,
   initialLikes = 0,
-  canEdit = false,
-  canDelete = false,
+  // canEdit / canDelete são ignorados para a lógica de "só o autor edita"
+  canEdit: _canEdit,
+  canDelete: _canDelete,
   onEdit,
   onDelete,
   deleting = false,
@@ -429,6 +431,23 @@ export function PostCard({
       ? "Informação considerada inválida"
       : "Em análise";
 
+  // Só o autor pode editar/excluir
+  const ownerId =
+    (post as any).user_id ??
+    (post as any).userId ??
+    (post as any).owner_id ??
+    null;
+
+  const isOwner =
+    typeof meId === "string" &&
+    meId.trim() !== "" &&
+    typeof ownerId === "string" &&
+    ownerId.trim() !== "" &&
+    meId === ownerId;
+
+  const canEditFinal = isOwner;
+  const canDeleteFinal = isOwner;
+
   return (
     <article className="flex gap-3 border-b border-white/10 px-4 py-3">
       <div className="mt-0.5">
@@ -468,7 +487,7 @@ export function PostCard({
             </div>
           </div>
 
-          {(canEdit || canDelete) && (
+          {(canEditFinal || canDeleteFinal) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -490,7 +509,7 @@ export function PostCard({
                   Opções
                 </DropdownMenuLabel>
 
-                {canEdit && (
+                {canEditFinal && (
                   <DropdownMenuItem
                     onClick={() => onEdit?.(post)}
                     className="flex cursor-pointer items-center gap-2 focus:bg-white/10 focus:text-white"
@@ -500,9 +519,9 @@ export function PostCard({
                   </DropdownMenuItem>
                 )}
 
-                {canEdit && canDelete && <DropdownMenuSeparator />}
+                {canEditFinal && canDeleteFinal && <DropdownMenuSeparator />}
 
-                {canDelete && (
+                {canDeleteFinal && (
                   <DropdownMenuItem
                     onClick={() => onDelete?.(post)}
                     disabled={deleting}

@@ -63,7 +63,7 @@ export default function NewsPage() {
     <main className="py-8">
       <header className="mb-6">
         <h1 className="text-3xl font-extrabold">Fique por dentro do que move o mercado cripto</h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-white/60">
           As principais novidades do mercado cripto, reunidas em um só lugar.
         </p>
       </header>

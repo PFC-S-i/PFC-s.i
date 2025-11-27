@@ -4,13 +4,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Info } from "lucide-react";
 
-/**
- * Simulador BIP39 (educacional)
- * - Não cole sua seed real. Use exemplos fictícios.
- * - Estima entropia "humana" da frase, o tempo de quebra (assumindo atacante forte)
- *   e mostra veredito baseado no TEMPO (apenas da frase).
- */
-
 // vídeo de apoio
 const VIDEO_URL =
   "https://www.youtube.com/watch?v=PSHOlRli57k&feature=youtu.be";
@@ -509,7 +502,13 @@ export default function Simulador() {
           <strong>Aviso:</strong> não cole sua seed real — use exemplos
           fictícios. Estimamos a entropia humana e o <em>tempo de quebra</em>{" "}
           (assumindo {GUESSES_PER_SEC.toLocaleString("pt-BR")} palpites/seg) e
-          mostramos a seed BIP39 derivada apenas para fins educacionais.
+          mostramos a seed BIP39 derivada apenas para fins educacionais.{" "}
+          <strong>
+            Esta é uma versão de protótipo do simulador, ainda em evolução, e
+            as estimativas podem não refletir com 100% de precisão o risco real
+            de uma seed em cenários de ataque.
+          </strong>
+          {/* <-- adicionado aviso de protótipo/precisão */}
         </p>
       </div>
 
@@ -718,7 +717,9 @@ export default function Simulador() {
             &quot;mnemonic&quot; + passphrase (NFKD).
           </li>
           <li>
-            O cálculo é conservador e cresce devagar com entradas simples.
+            O cálculo é conservador e cresce devagar com entradas simples; trate
+            os resultados como aproximações educacionais, não como auditoria
+            formal de segurança.
           </li>
         </ul>
       </div>

@@ -9,11 +9,26 @@ import { Button } from "@/components";
 
 const PAGE_SIZE = 10;
 
-type PostListProps = {
-  posts: ForumPost[];
+// Estende ForumPost com user_id opcional (vem do backend)
+type ForumPostWithAuthor = ForumPost & {
+  user_id?: string | null;
 };
 
-export function PostList({ posts }: PostListProps) {
+type PostListProps = {
+  posts: ForumPostWithAuthor[];
+  meId?: string | null;
+  onEdit?: (post: ForumPostWithAuthor) => void;
+  onDelete?: (post: ForumPostWithAuthor) => void;
+  deletingId?: string | null;
+};
+
+export function PostList({
+  posts,
+  meId = null,
+  onEdit,
+  onDelete,
+  deletingId,
+}: PostListProps) {
   const [page, setPage] = useState(1);
 
   const totalPages = Math.max(1, Math.ceil(posts.length / PAGE_SIZE));
@@ -45,7 +60,13 @@ export function PostList({ posts }: PostListProps) {
       <ul className="grid grid-cols-1 gap-4">
         {visiblePosts.map((p) => (
           <li key={p.id}>
-            <PostCard post={p} />
+            <PostCard
+              post={p}
+              meId={meId}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              deleting={deletingId === p.id}
+            />
           </li>
         ))}
       </ul>

@@ -6,21 +6,35 @@ export const metadata = {
     "Conceitos essenciais sobre criptomoedas: como funcionam, histórico e tipos de ativos.",
 };
 
-const videoId = "BnCOhgg_X40"; //O que vem depois do v= na URL do vídeo
+const videoId = "BnCOhgg_X40"; // O que vem depois do v= na URL do vídeo
 
 export default function Page() {
   return (
     <main className="py-10 md:py-14">
-      {/* Fundo específico desta página */}
       <div className="fixed inset-0 -z-10 bg-[#151515]" aria-hidden />
 
       <article className="mx-auto max-w-5xl">
-        <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
+        <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-center">
           O que são Criptomoedas?
         </h1>
 
-        {/* ---- TEXTO EM 3 PARÁGRAFOS ---- */}
-        <div className="mt-6 space-y-6 text-base md:text-lg leading-relaxed text-neutral-300">
+        <div className="mt-6 flex justify-center">
+          <div className="w-full max-w-3xl rounded-2xl overflow-hidden border border-[#2A2A2A] bg-[#1B1B1B]">
+            <div className="relative aspect-video">
+              <iframe
+                className="absolute inset-0 h-full w-full"
+                src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0`}
+                title="O que são criptomoedas (vídeo)"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                loading="lazy"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 space-y-6 text-base md:text-lg leading-relaxed text-neutral-300 text-justify">
           <p>
             Criptomoedas são ativos digitais que usam criptografia para garantir
             segurança, verificabilidade e controle de emissão, funcionando em
@@ -90,28 +104,6 @@ export default function Page() {
           </p>
         </div>
 
-        {/* ---- VÍDEO (menor) NO FINAL ---- */}
-        <h2 className="mt-12 text-xl md:text-2xl font-semibold">
-          Assista um vídeo para mais informações
-        </h2>
-
-        <div className="mt-4 flex justify-center">
-          <div className="w-full max-w-3xl rounded-2xl overflow-hidden border border-[#2A2A2A] bg-[#1B1B1B]">
-            <div className="relative aspect-video">
-              <iframe
-                className="absolute inset-0 h-full w-full"
-                src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0`}
-                title="O que são criptomoedas (vídeo)"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                loading="lazy"
-                allowFullScreen
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* ---- BOTÃO VOLTAR ---- */}
         <div className="mt-8">
           <Link
             href="/educational"

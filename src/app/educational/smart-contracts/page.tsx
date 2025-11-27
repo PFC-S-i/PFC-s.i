@@ -6,7 +6,7 @@ export const metadata = {
     "Conceitos essenciais sobre criptomoedas: como funcionam, histórico e tipos de ativos.",
 };
 
-const videoId = "UXj6m3gyMZ8"; //O que vem depois do v= na URL do vídeo
+const videoId = "UXj6m3gyMZ8"; // O que vem depois do v= na URL do vídeo
 
 export default function Page() {
   return (
@@ -14,12 +14,27 @@ export default function Page() {
       <div className="fixed inset-0 -z-10 bg-[#151515]" aria-hidden />
 
       <article className="mx-auto max-w-5xl">
-        <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
-          Ethereum e a ideia de &quot;smart contracts&quot
+        <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-center">
+          Ethereum e a ideia de &quot;smart contracts&quot;
         </h1>
 
-        {/* ---- TEXTO EM 3 PARÁGRAFOS ---- */}
-        <div className="mt-6 space-y-6 text-base md:text-lg leading-relaxed text-neutral-300">
+        <div className="mt-6 flex justify-center">
+          <div className="w-full max-w-3xl rounded-2xl overflow-hidden border border-[#2A2A2A] bg-[#1B1B1B]">
+            <div className="relative aspect-video">
+              <iframe
+                className="absolute inset-0 h-full w/full"
+                src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0`}
+                title="Ethereum e smart contracts (vídeo)"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                loading="lazy"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 space-y-6 text-base md:text-lg leading-relaxed text-neutral-300 text-justify">
           <p>
             Ethereum é uma blockchain programável — isto é, um livro-razão
             distribuído que, além de registrar saldos e transferências, executa
@@ -85,8 +100,8 @@ export default function Page() {
             A escalabilidade vem, sobretudo, de camadas 2 (rollups): optimistic
             (provas de fraude) e ZK (provas de validade), que executam off-chain
             e publicam dados/provas na L1, herdando sua segurança; o EIP-4844
-            reduziu significativamente o custo desse dado. O PoS comvalidadores
-            apostando ETH coordena proposição/atestações de blocos e oferece
+            reduziu significativamente o custo desse dado. O PoS, com validadores
+            apostando ETH, coordena proposição/atestações de blocos e oferece
             finalidade econômica após agregação de votos — típica em minutos,
             suficiente para a maioria dos casos. Em troca, surgem trade-offs:
             custos variáveis de gas, superfície de ataque maior que a de um
@@ -98,28 +113,6 @@ export default function Page() {
           </p>
         </div>
 
-        {/* ---- VÍDEO (menor) NO FINAL ---- */}
-        <h2 className="mt-12 text-xl md:text-2xl font-semibold">
-          Assista um vídeo para mais informações
-        </h2>
-
-        <div className="mt-4 flex justify-center">
-          <div className="w-full max-w-3xl rounded-2xl overflow-hidden border border-[#2A2A2A] bg-[#1B1B1B]">
-            <div className="relative aspect-video">
-              <iframe
-                className="absolute inset-0 h-full w-full"
-                src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0`}
-                title="O que são criptomoedas (vídeo)"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                loading="lazy"
-                allowFullScreen
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* ---- BOTÃO VOLTAR ---- */}
         <div className="mt-8">
           <Link
             href="/educational"

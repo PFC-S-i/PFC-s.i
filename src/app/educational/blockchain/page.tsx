@@ -13,11 +13,27 @@ export default function Page() {
       <div className="fixed inset-0 -z-10 bg-[#151515]" aria-hidden />
 
       <article className="mx-auto max-w-5xl">
-        <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
+        <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-center">
           Como funciona a Blockchain?
         </h1>
 
-        <div className="mt-6 space-y-6 text-base md:text-lg leading-relaxed text-neutral-300">
+        <div className="mt-6 flex justify-center">
+          <div className="w-full max-w-3xl rounded-2xl overflow-hidden border border-[#2A2A2A] bg-[#1B1B1B]">
+            <div className="relative aspect-video">
+              <iframe
+                className="absolute inset-0 h-full w-full"
+                src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0`}
+                title="Como funciona a blockchain (vídeo)"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                loading="lazy"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 space-y-6 text-base md:text-lg leading-relaxed text-neutral-300 text-justify">
           <p>
             Blockchain é um livro-razão distribuído em que transações são
             agrupadas em blocos encadeados por criptografia: cada bloco
@@ -97,26 +113,6 @@ export default function Page() {
             mas introduzem riscos específicos (bugs, oráculos, MEV) que exigem
             auditoria, governança cuidadosa e boas práticas de desenvolvimento.
           </p>
-        </div>
-
-        <h2 className="mt-12 text-xl md:text-2xl font-semibold">
-          Assista um vídeo para mais informações
-        </h2>
-
-        <div className="mt-4 flex justify-center">
-          <div className="w-full max-w-3xl rounded-2xl overflow-hidden border border-[#2A2A2A] bg-[#1B1B1B]">
-            <div className="relative aspect-video">
-              <iframe
-                className="absolute inset-0 h-full w-full"
-                src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0`}
-                title="Como funciona a blockchain (vídeo)"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                loading="lazy"
-                allowFullScreen
-              />
-            </div>
-          </div>
         </div>
 
         <div className="mt-8">

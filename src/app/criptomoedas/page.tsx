@@ -32,9 +32,15 @@ export default function CriptomoedasPage() {
 
       {/* título + busca responsivos */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
-        <h2 className="text-lg sm:text-xl font-medium opacity-90">
-          Principais
-        </h2>
+        <div>
+          <h2 className="text-lg sm:text-xl font-medium opacity-90">
+            Principais
+          </h2>
+          {/* mensagem de ajuda para o gráfico */}
+          <p className="mt-1 text-xs sm:text-sm text-white/60">
+            Clique em uma moeda da lista para visualizar um gráfico detalhado.
+          </p>
+        </div>
 
         <input
           value={q}
