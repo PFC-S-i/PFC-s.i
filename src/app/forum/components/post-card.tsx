@@ -271,7 +271,11 @@ export function PostCard({
         const res = await classifyEventLocalAPI(title, desc);
         if (cancelled) return;
 
-        const anyRes = res as any;
+        const anyRes = res as {
+          decision?: "allow" | "warn" | "block";
+          ui_label?: string;
+        };
+        
         const stored: StoredAIBadge = {
           label: res.label as AILabel,
           decision:
